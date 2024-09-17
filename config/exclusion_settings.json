@@ -1,5 +1,0 @@
-{
-    "excluded_dirs": ["node_modules", ".git", ".vs"],
-    "excluded_files": [".env", "package-lock.json"]
-}
-  
