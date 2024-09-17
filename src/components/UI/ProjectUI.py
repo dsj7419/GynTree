@@ -1,9 +1,12 @@
+# GynTree: Defines the interface for creating and managing GynTree projects.
+
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QFileDialog, QListWidget, QHBoxLayout, QFrame)
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt
 from models.Project import Project
 from services.ProjectManager import ProjectManager
+from utilities.resource_path import get_resource_path
 
 class ProjectUI(QWidget):
     def __init__(self):
@@ -13,7 +16,7 @@ class ProjectUI(QWidget):
 
     def init_ui(self):
         self.setWindowTitle('Project Manager')
-        self.setWindowIcon(QIcon('assets/images/GynTree_logo 64X64.ico'))
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo 64X64.ico')))
         self.setStyleSheet("""
             QWidget {
                 background-color: #f0f0f0;
@@ -54,7 +57,6 @@ class ProjectUI(QWidget):
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
 
-        # Create project section
         create_section = QFrame()
         create_section.setFrameShape(QFrame.StyledPanel)
         create_layout = QVBoxLayout(create_section)
@@ -80,7 +82,6 @@ class ProjectUI(QWidget):
 
         layout.addWidget(create_section)
 
-        # Load project section
         load_section = QFrame()
         load_section.setFrameShape(QFrame.StyledPanel)
         load_layout = QVBoxLayout(load_section)

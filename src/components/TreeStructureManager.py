@@ -1,3 +1,5 @@
+# GynTree: Manages the creation and population of tree structures for directory visualization.
+
 import os
 from PyQt5.QtWidgets import QTreeWidgetItem
 
@@ -35,13 +37,11 @@ class TreeStructureManager:
             parts = os.path.relpath(path, self.directory_analyzer.start_dir).split(os.sep)
             current_dict = path_dict
 
-            # Traverse each part of the path and ensure it's a dictionary
             for part in parts[:-1]:
                 if part not in current_dict:
                     current_dict[part] = {}
                 current_dict = current_dict[part]
 
-            # Assign the last part of the path as either a directory or a file
             if item_type == 'Directory':
                 if parts[-1] not in current_dict:
                     current_dict[parts[-1]] = {}
@@ -56,11 +56,9 @@ class TreeStructureManager:
         """
         for name, value in sorted(path_dict.items()):
             if isinstance(value, dict):
-                # Add directory
                 item = QTreeWidgetItem(parent, [name, 'Directory'])
                 item.setIcon(0, self.folder_icon)
-                self._add_items(item, value)  # Recurse into subdirectories
+                self._add_items(item, value) 
             else:
-                # Add file
                 item = QTreeWidgetItem(parent, [name, 'File'])
                 item.setIcon(0, self.file_icon)

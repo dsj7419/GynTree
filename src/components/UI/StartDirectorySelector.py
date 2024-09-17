@@ -1,3 +1,5 @@
+# GynTree: Implements a UI component for selecting the starting directory for analysis.
+
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog)
 
 
@@ -10,7 +12,6 @@ class StartDirectorySelector(QWidget):
     def init_ui(self):
         layout = QVBoxLayout()
 
-        # Start directory selection
         layout.addWidget(QLabel('Select Start Directory'))
         self.select_button = QPushButton('Select Directory')
         self.select_button.clicked.connect(self.select_directory)

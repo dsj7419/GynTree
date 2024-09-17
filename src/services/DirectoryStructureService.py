@@ -1,25 +1,23 @@
-"""
-GynTree: This module is responsible for analyzing directory structures.
-It provides functionality to traverse directories, collect file information,
-and generate both hierarchical and flat representations of the directory structure.
-The DirectoryAnalyzer class is the core component for directory analysis operations.
-"""
-
 import os
 from services.CommentParser import CommentParser
 
-class DirectoryAnalyzer:
-    def __init__(self, start_dir, settings_manager):
-        self.start_dir = os.path.normpath(start_dir)
+class DirectoryStructureService:
+    def __init__(self, settings_manager):
         self.settings_manager = settings_manager
         self.comment_parser = CommentParser()
 
-    def analyze_directory(self):
-        return self._analyze_recursive(self.start_dir)
+    def get_hierarchical_structure(self, start_dir):
+        """
+        Returns a hierarchical structure of the directory.
+        """
+        return self._analyze_recursive(start_dir)
 
-    def get_flat_structure(self):
+    def get_flat_structure(self, start_dir):
+        """
+        Returns a flat structure of the directory.
+        """
         flat_structure = []
-        for root, _, files in os.walk(self.start_dir):
+        for root, _, files in os.walk(start_dir):
             if self.settings_manager.is_excluded_dir(root):
                 continue
             for file in files:
@@ -27,6 +25,7 @@ class DirectoryAnalyzer:
                 if not self.settings_manager.is_excluded_file(full_path):
                     flat_structure.append({
                         'path': full_path,
+                        'type': 'File',
                         'description': self.comment_parser.get_file_purpose(full_path)
                     })
         return flat_structure
@@ -38,7 +37,6 @@ class DirectoryAnalyzer:
             'path': current_dir,
             'children': []
         }
-
         for item in os.listdir(current_dir):
             full_path = os.path.join(current_dir, item)
             
@@ -52,7 +50,7 @@ class DirectoryAnalyzer:
                     'name': item,
                     'type': 'File',
                     'path': full_path,
+                    'description': self.comment_parser.get_file_purpose(full_path)
                 }
                 structure['children'].append(file_info)
-
         return structure

@@ -6,10 +6,11 @@ from PyQt5.QtGui import QIcon, QFont, QPixmap
 from PyQt5.QtCore import Qt
 from components.UI.AutoExcludeUI import AutoExcludeUI
 from components.UI.ProjectUI import ProjectUI
-from components.UI.ExclusionsManager import ExclusionsManager
+from components.UI.ExclusionsManagerUI import ExclusionsManager
 from components.UI.ResultUI import ResultUI
 from components.UI.DirectoryTreeUI import DirectoryTreeUI
 import os
+from utilities.resource_path import get_resource_path
 
 class DashboardUI(QMainWindow):
     def __init__(self, controller):
@@ -23,7 +24,7 @@ class DashboardUI(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle('GynTree Dashboard')
-        self.setWindowIcon(QIcon('assets/images/GynTree_logo 64X64.ico'))
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo 64X64.ico')))
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #f0f0f0;
@@ -57,9 +58,8 @@ class DashboardUI(QMainWindow):
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(20)
 
-        # Logo and welcome message
         logo_label = QLabel()
-        logo_path = 'assets/images/GynTree_logo.png'
+        logo_path = get_resource_path('assets/images/GynTree_logo.png')
         if os.path.exists(logo_path):
             logo_pixmap = QPixmap(logo_path)
             logo_label.setPixmap(logo_pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
@@ -74,7 +74,6 @@ class DashboardUI(QMainWindow):
         header_layout.setAlignment(Qt.AlignCenter)
         main_layout.addLayout(header_layout)
 
-        # Buttons
         self.create_project_btn = self.create_styled_button('Create Project')
         self.load_project_btn = self.create_styled_button('Load Project')
         self.manage_exclusions_btn = self.create_styled_button('Manage Exclusions')
@@ -120,9 +119,11 @@ class DashboardUI(QMainWindow):
         self.result_ui_instance.update_result(result)
         self.result_ui_instance.show()
 
-    def show_auto_exclude_ui(self, auto_exclude_manager, settings_manager):
+    def show_auto_exclude_ui(self, auto_exclude_manager, settings_manager, formatted_recommendations):
         if not self.auto_exclude_ui_instance:
-            self.auto_exclude_ui_instance = AutoExcludeUI(auto_exclude_manager, settings_manager)
+            self.auto_exclude_ui_instance = AutoExcludeUI(auto_exclude_manager, settings_manager, formatted_recommendations)
+        else:
+            self.auto_exclude_ui_instance.update_recommendations(formatted_recommendations)
         self.auto_exclude_ui_instance.show()
 
     def manage_exclusions(self, settings_manager):

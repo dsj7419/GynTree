@@ -1,23 +1,42 @@
-# GynTree
+# GynTree: Comprehensive Directory Analysis Tool
 
-**GynTree** is a customizable tool designed to recursively analyze project directories, extract file purposes from comments, and manage file/directory exclusions with ease. This project adheres to premium Object-Oriented design principles (SOLID) and is future-proof for maintainability and expansion.
+GynTree is a powerful Python application designed to analyze and visualize complex directory structures, providing deep insights into your project's architecture. Whether you're managing a large codebase, organizing a media library, or just trying to understand the layout of a new project, GynTree has got you covered.
 
-## Key Features
+![GynTree Logo](../images/GynTree_logo.png)
 
-- Directory structure analysis with folder and file exclusion management.
-- Supports extracting file purposes from a wide variety of programming languages.
-- Easy to set up, intuitive to use, and expandable.
+## 🌟 Key Features
 
-## Getting Started
+- **Smart Directory Analysis**: Quickly scan and map out your project structure, no matter how complex.
+- **Intelligent Auto-Exclude**: Automatically identify and suggest exclusions for common file types and directories (e.g., `.git`, `__pycache__`, `node_modules`).
+- **Interactive Tree Visualization**: Explore your project structure with an intuitive, collapsible tree view.
+- **Multi-Format Exports**: Generate beautiful PNG images or ASCII text representations of your directory structure.
+- **Customizable Exclusions**: Fine-tune your analysis by easily managing file and directory exclusions.
+- **Comment Extraction**: Automatically extract and display file purpose comments, making it easier to understand your codebase at a glance.
+- **Cross-Platform Compatibility**: Works seamlessly on Windows, macOS, and Linux.
+- **Project Management**: Save and load multiple project configurations for quick access to different codebases.
 
-1. Clone this repository.
-2. Install dependencies with `pip install -r requirements.txt`.
-3. Run the app using `python src/App.py`.
+## 🚀 Getting Started
 
-## Contributing
+Ready to dive in? Check out our [Installation Guide](INSTALL.md) to get GynTree up and running on your system in no time!
 
-See the `CONTRIBUTING.md` for guidelines on how to contribute to the project.
+## 📖 Documentation
 
-## License
+- [User Guide](user_guide.md): Learn how to use GynTree effectively.
+- [Configuration](configuration.md): Customize GynTree to suit your needs.
+- [API Reference](api_reference.md): For developers looking to extend GynTree's functionality.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 🤝 Contributing
+
+We welcome contributions from the community! Whether it's bug reports, feature requests, or code contributions, check out our [Contributing Guide](CONTRIBUTING.md) to get started.
+
+## 📜 License
+
+GynTree is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgements
+
+A big thank you to all our contributors and the open-source community for their invaluable input and support. This project is started for personal use, but I hope others find it useful and can benefit from it. I would love additional help and insight to evolve this project even more.
+
+---
+
+Built with ❤️

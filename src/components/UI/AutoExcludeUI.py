@@ -1,20 +1,24 @@
+# GynTree: Defines the user interface for managing automatic file and directory exclusions.
+
 from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QCheckBox, QPushButton,
-                             QScrollArea, QWidget, QHBoxLayout)
+                             QScrollArea, QWidget, QHBoxLayout, QTextEdit)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QFont
 import os
+from utilities.resource_path import get_resource_path
 
 class AutoExcludeUI(QMainWindow):
-    def __init__(self, auto_exclude_manager, settings_manager):
+    def __init__(self, auto_exclude_manager, settings_manager, formatted_recommendations):
         super().__init__()
         self.auto_exclude_manager = auto_exclude_manager
         self.settings_manager = settings_manager
+        self.formatted_recommendations = formatted_recommendations
         self.checkboxes = {'directories': {}, 'files': {}}
         self.init_ui()
 
     def init_ui(self):
         self.setWindowTitle('Auto-Exclude Recommendations')
-        self.setWindowIcon(QIcon('assets/images/GynTree_logo 64X64.ico'))
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo 64X64.ico')))
         self.setStyleSheet("""
             QMainWindow { background-color: #f0f0f0; }
             QLabel { font-size: 16px; color: #333; margin-bottom: 10px; }
@@ -23,12 +27,19 @@ class AutoExcludeUI(QMainWindow):
             QPushButton { background-color: #4CAF50; color: white; padding: 10px 20px; 
                           font-size: 16px; margin: 4px 2px; border-radius: 8px; }
             QPushButton:hover { background-color: #45a049; }
+            QTextEdit { font-size: 14px; color: #333; background-color: #fff; border: 1px solid #ddd; }
         """)
 
         main_layout = QVBoxLayout()
-        title = QLabel('Select items to auto-exclude:')
+        title = QLabel('Auto-Exclude Recommendations')
         title.setFont(QFont('Arial', 18, QFont.Bold))
         main_layout.addWidget(title)
+
+        recommendations_text = QTextEdit()
+        recommendations_text.setPlainText(self.formatted_recommendations)
+        recommendations_text.setReadOnly(True)
+        recommendations_text.setFixedHeight(200)
+        main_layout.addWidget(recommendations_text)
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -70,7 +81,7 @@ class AutoExcludeUI(QMainWindow):
         central_widget = QWidget()
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
-        self.setGeometry(300, 300, 400, 500)
+        self.setGeometry(300, 300, 400, 600)
 
     def toggle_group(self, state, group):
         is_checked = (state == Qt.Checked)
@@ -96,3 +107,9 @@ class AutoExcludeUI(QMainWindow):
             'excluded_files': list(excluded_files)
         })
         self.close()
+
+    def update_recommendations(self, formatted_recommendations):
+        self.formatted_recommendations = formatted_recommendations
+        recommendations_text = self.findChild(QTextEdit)
+        if recommendations_text:
+            recommendations_text.setPlainText(self.formatted_recommendations)

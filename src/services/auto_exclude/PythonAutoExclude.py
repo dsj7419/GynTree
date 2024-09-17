@@ -1,54 +1,34 @@
-import os
+# GynTree: Defines exclusion rules specific to Python projects and environments.
 
-class PythonAutoExclude:
+import os
+from services.ExclusionService import ExclusionService
+
+class PythonAutoExclude(ExclusionService):
     def __init__(self, start_directory):
-        self.start_directory = start_directory
+        super().__init__(start_directory)
 
     def get_exclusions(self):
-        """
-        Gather both directory and file exclusions.
-        """
         recommendations = {'directories': set(), 'files': set()}
 
-        # Exclude directories like __pycache__ and .pytest_cache
-        recommendations['directories'].update(self._get_exclusions_by_name("__pycache__"))
-        recommendations['directories'].update(self._get_exclusions_by_name(".pytest_cache"))
+        for root, dirs, files in os.walk(self.start_directory):
+            for dir in ['__pycache__', '.pytest_cache', 'build', 'dist', '.tox']:
+                if dir in dirs:
+                    recommendations['directories'].add(os.path.join(root, dir))
 
-        # Exclude .pyc and __init__.py files
-        recommendations['files'].update(self.get_pyc_file_exclusions())
-        recommendations['files'].update(self.get_init_file_exclusions())
-
-        return recommendations
-
-    def get_pyc_file_exclusions(self):
-        """
-        Gather .pyc files for exclusion.
-        """
-        recommendations = set()
-        for root, _, files in os.walk(self.start_directory):
             for file in files:
-                if file.endswith('.pyc'):
-                    recommendations.add(os.path.join(root, file))
-        return recommendations
+                if file.endswith(('.pyc', '.pyo', '.coverage')):
+                    recommendations['files'].add(os.path.join(root, file))
+                elif file == '__init__.py':
+                    recommendations['files'].add(os.path.join(root, file))
 
-    def get_init_file_exclusions(self):
-        """
-        Gather __init__.py files for exclusion.
-        """
-        recommendations = set()
-        for root, _, files in os.walk(self.start_directory):
-            for file in files:
-                if file == '__init__.py':
-                    recommendations.add(os.path.join(root, file))
-        return recommendations
+            for venv in ['venv', '.venv', 'env']:
+                if venv in dirs:
+                    recommendations['directories'].add(os.path.join(root, venv))
 
-    def _get_exclusions_by_name(self, folder_name):
-        """
-        Exclude directories by name (e.g., __pycache__, .pytest_cache).
-        """
-        recommendations = set()
-        for root, dirs, _ in os.walk(self.start_directory):
-            for directory in dirs:
-                if directory == folder_name:
-                    recommendations.add(os.path.join(root, directory))
+        if os.path.exists(os.path.join(self.start_directory, 'setup.py')) or \
+           os.path.exists(os.path.join(self.start_directory, 'requirements.txt')) or \
+           os.path.exists(os.path.join(self.start_directory, 'pyproject.toml')):
+            recommendations['directories'].add(os.path.join(self.start_directory, 'build'))
+            recommendations['directories'].add(os.path.join(self.start_directory, 'dist'))
+
         return recommendations

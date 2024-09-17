@@ -1,3 +1,5 @@
+# GynTree: Handles application and project settings, including reading and writing configurations.
+
 import os
 import json
 
