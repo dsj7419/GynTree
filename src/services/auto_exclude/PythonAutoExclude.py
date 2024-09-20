@@ -1,34 +1,36 @@
-# GynTree: Defines exclusion rules specific to Python projects and environments.
-
 import os
+from typing import Dict, Set
 from services.ExclusionService import ExclusionService
+from services.ProjectTypeDetector import ProjectTypeDetector
+from services.SettingsManager import SettingsManager
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PythonAutoExclude(ExclusionService):
-    def __init__(self, start_directory):
-        super().__init__(start_directory)
+    def __init__(self, start_directory: str, project_type_detector: ProjectTypeDetector, settings_manager: SettingsManager):
+        super().__init__(start_directory, project_type_detector, settings_manager)
 
-    def get_exclusions(self):
-        recommendations = {'directories': set(), 'files': set()}
+    def get_exclusions(self) -> Dict[str, Set[str]]:
+        recommendations = {'root_exclusions': set(), 'excluded_dirs': set(), 'excluded_files': set()}
 
-        for root, dirs, files in os.walk(self.start_directory):
-            for dir in ['__pycache__', '.pytest_cache', 'build', 'dist', '.tox']:
-                if dir in dirs:
-                    recommendations['directories'].add(os.path.join(root, dir))
+        if self.project_type_detector.detect_python_project():
+            python_root_exclusions = {'__pycache__', '.pytest_cache', 'build', 'dist', '.tox', 'venv', '.venv', 'env'}
+            recommendations['root_exclusions'].update(python_root_exclusions)
+            logger.debug(f"PythonAutoExclude: Adding Python-related excluded_dirs to root exclusions: {python_root_exclusions}")
 
+        for root, dirs, files in self.walk_directory():
             for file in files:
-                if file.endswith(('.pyc', '.pyo', '.coverage')):
-                    recommendations['files'].add(os.path.join(root, file))
-                elif file == '__init__.py':
-                    recommendations['files'].add(os.path.join(root, file))
+                if file.endswith(('.pyc', '.pyo', '.coverage', '.egg-info')):
+                    recommendations['excluded_files'].add(os.path.relpath(os.path.join(root, file), self.start_directory))
+                    logger.debug(f"PythonAutoExclude: Recommending exclusion of Python-related file {file}")
+                elif file in ['requirements.txt', 'Pipfile', 'Pipfile.lock', 'poetry.lock', 'pyproject.toml']:
+                    recommendations['excluded_files'].add(os.path.relpath(os.path.join(root, file), self.start_directory))
+                    logger.debug(f"PythonAutoExclude: Recommending exclusion of Python dependency file {file}")
 
-            for venv in ['venv', '.venv', 'env']:
-                if venv in dirs:
-                    recommendations['directories'].add(os.path.join(root, venv))
-
-        if os.path.exists(os.path.join(self.start_directory, 'setup.py')) or \
-           os.path.exists(os.path.join(self.start_directory, 'requirements.txt')) or \
-           os.path.exists(os.path.join(self.start_directory, 'pyproject.toml')):
-            recommendations['directories'].add(os.path.join(self.start_directory, 'build'))
-            recommendations['directories'].add(os.path.join(self.start_directory, 'dist'))
+        setup_files = ['setup.py', 'setup.cfg']
+        if any(os.path.exists(os.path.join(self.start_directory, f)) for f in setup_files):
+            recommendations['excluded_dirs'].update(['build', 'dist'])
+            logger.debug("PythonAutoExclude: Recommending exclusion of 'build' and 'dist' excluded_dirs")
 
         return recommendations

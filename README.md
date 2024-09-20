@@ -2,7 +2,7 @@
 
 GynTree is a powerful Python application designed to analyze and visualize complex directory structures, providing deep insights into your project's architecture. Whether you're managing a large codebase, organizing a media library, or just trying to understand the layout of a new project, GynTree has got you covered.
 
-![GynTree Logo](../images/GynTree_logo.png)
+![GynTree Logo](./assets/images/GynTree_logo.png)
 
 ## 🌟 Key Features
 
@@ -17,17 +17,17 @@ GynTree is a powerful Python application designed to analyze and visualize compl
 
 ## 🚀 Getting Started
 
-Ready to dive in? Check out our [Installation Guide](INSTALL.md) to get GynTree up and running on your system in no time!
+Ready to dive in? Check out our [Installation Guide](./assets/docs/INSTALL.md) to get GynTree up and running on your system in no time!
 
 ## 📖 Documentation
 
-- [User Guide](user_guide.md): Learn how to use GynTree effectively.
-- [Configuration](configuration.md): Customize GynTree to suit your needs.
-- [API Reference](api_reference.md): For developers looking to extend GynTree's functionality.
+- [User Guide](./assets/docs/user_guide.md): Learn how to use GynTree effectively.
+- [Configuration](./assets/docs/configuration.md): Customize GynTree to suit your needs.
+- [API Reference](./assets/docs/api_reference.md): For developers looking to extend GynTree's functionality.
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Whether it's bug reports, feature requests, or code contributions, check out our [Contributing Guide](CONTRIBUTING.md) to get started.
+We welcome contributions from the community! Whether it's bug reports, feature requests, or code contributions, check out our [Contributing Guide](./assets/docs/CONTRIBUTING.md) to get started.
 
 ## 📜 License
 

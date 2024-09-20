@@ -1,115 +1,110 @@
-# GynTree: Defines the user interface for managing automatic file and directory exclusions.
-
-from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QCheckBox, QPushButton,
-                             QScrollArea, QWidget, QHBoxLayout, QTextEdit)
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget, QTreeWidget, QTreeWidgetItem, QMessageBox, QHeaderView, QHBoxLayout
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont
 import os
 from utilities.resource_path import get_resource_path
 
 class AutoExcludeUI(QMainWindow):
-    def __init__(self, auto_exclude_manager, settings_manager, formatted_recommendations):
+    def __init__(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context):
         super().__init__()
         self.auto_exclude_manager = auto_exclude_manager
         self.settings_manager = settings_manager
         self.formatted_recommendations = formatted_recommendations
-        self.checkboxes = {'directories': {}, 'files': {}}
+        self.project_context = project_context
+        self.folder_icon = QIcon(get_resource_path("assets/images/folder_icon.png"))
+        self.file_icon = QIcon(get_resource_path("assets/images/file_icon.png"))
+        self.setWindowTitle('Auto-Exclude Recommendations')
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/gyntree_logo 64x64.ico')))
+        self.setStyleSheet(""" 
+            QMainWindow { background-color: #f0f0f0; }
+            QLabel { font-size: 20px; color: #333; margin-bottom: 10px; }
+            QPushButton { background-color: #4caf50; color: white; padding: 8px 16px; font-size: 14px; margin: 4px 2px; border-radius: 6px; }
+            QPushButton:hover { background-color: #45a049; }
+            QTreeWidget { font-size: 14px; color: #333; background-color: #fff; border: 1px solid #ddd; }
+        """)
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle('Auto-Exclude Recommendations')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo 64X64.ico')))
-        self.setStyleSheet("""
-            QMainWindow { background-color: #f0f0f0; }
-            QLabel { font-size: 16px; color: #333; margin-bottom: 10px; }
-            QCheckBox { font-size: 14px; color: #555; padding: 2px 0; }
-            QCheckBox::indicator { width: 18px; height: 18px; }
-            QPushButton { background-color: #4CAF50; color: white; padding: 10px 20px; 
-                          font-size: 16px; margin: 4px 2px; border-radius: 8px; }
-            QPushButton:hover { background-color: #45a049; }
-            QTextEdit { font-size: 14px; color: #333; background-color: #fff; border: 1px solid #ddd; }
-        """)
+        central_widget = QWidget()
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
-        main_layout = QVBoxLayout()
-        title = QLabel('Auto-Exclude Recommendations')
-        title.setFont(QFont('Arial', 18, QFont.Bold))
-        main_layout.addWidget(title)
+        header_layout = QHBoxLayout()
+        title_label = QLabel('Auto-Exclude Recommendations', font=QFont('Arial', 16, QFont.Bold))
+        header_layout.addWidget(title_label)
+        collapse_btn = QPushButton('Collapse All')
+        expand_btn = QPushButton('Expand All')
+        header_layout.addWidget(collapse_btn)
+        header_layout.addWidget(expand_btn)
+        main_layout.addLayout(header_layout)
 
-        recommendations_text = QTextEdit()
-        recommendations_text.setPlainText(self.formatted_recommendations)
-        recommendations_text.setReadOnly(True)
-        recommendations_text.setFixedHeight(200)
-        main_layout.addWidget(recommendations_text)
+        self.tree_widget = QTreeWidget()
+        self.tree_widget.setHeaderLabels(['Name', 'Type'])
+        self.tree_widget.setColumnWidth(0, 300)
+        self.tree_widget.setAlternatingRowColors(True)
+        self.tree_widget.setIconSize(QSize(20, 20))
+        self.tree_widget.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.tree_widget.header().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        main_layout.addWidget(self.tree_widget)
 
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_widget = QWidget()
-        scroll_layout = QVBoxLayout(scroll_widget)
+        self.populate_tree()
 
-        current_settings = {
-            'excluded_dirs': self.settings_manager.get_excluded_dirs(),
-            'excluded_files': self.settings_manager.get_excluded_files()
-        }
-        recommendations = self.auto_exclude_manager.get_grouped_recommendations(self.settings_manager.settings)
+        collapse_btn.clicked.connect(self.tree_widget.collapseAll)
+        expand_btn.clicked.connect(self.tree_widget.expandAll)
 
-        for exclusion_type in ['directories', 'files']:
-            if recommendations[exclusion_type]:
-                group_widget = QWidget()
-                group_layout = QVBoxLayout(group_widget)
-                group_checkbox = QCheckBox(exclusion_type.capitalize())
-                group_checkbox.setFont(QFont('Arial', 14, QFont.Bold))
-                group_checkbox.setChecked(True)
-                group_checkbox.stateChanged.connect(lambda state, g=exclusion_type: self.toggle_group(state, g))
-                self.checkboxes[exclusion_type]['group'] = group_checkbox
-                group_layout.addWidget(group_checkbox)
-
-                for item in recommendations[exclusion_type]:
-                    item_checkbox = QCheckBox(os.path.basename(item))
-                    item_checkbox.setChecked(True)
-                    item_checkbox.setStyleSheet("margin-left: 20px;")
-                    self.checkboxes[exclusion_type][item] = item_checkbox
-                    group_layout.addWidget(item_checkbox)
-                scroll_layout.addWidget(group_widget)
-
-        scroll_area.setWidget(scroll_widget)
-        main_layout.addWidget(scroll_area)
-
-        apply_button = QPushButton('Apply')
+        apply_button = QPushButton('Apply Exclusions')
         apply_button.clicked.connect(self.apply_exclusions)
         main_layout.addWidget(apply_button, alignment=Qt.AlignCenter)
 
-        central_widget = QWidget()
-        central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
-        self.setGeometry(300, 300, 400, 600)
+        self.setGeometry(300, 150, 800, 600)
 
-    def toggle_group(self, state, group):
-        is_checked = (state == Qt.Checked)
-        for item, checkbox in self.checkboxes[group].items():
-            if item != 'group':
-                checkbox.setChecked(is_checked)
+    def populate_tree(self):
+        """Populates the tree with merged exclusions from both AutoExcludeManager and project folder."""
+        self.tree_widget.clear()
+        root = self.tree_widget.invisibleRootItem()
+
+        combined_exclusions = self.get_combined_exclusions()
+
+        categories = ['root_exclusions', 'excluded_dirs', 'excluded_files']
+        for category in categories:
+            category_item = QTreeWidgetItem(root, [category.replace('_', ' ').title(), ''])
+            category_item.setFlags(category_item.flags() & ~Qt.ItemIsUserCheckable)
+
+            for path in sorted(combined_exclusions.get(category, [])):
+                item = QTreeWidgetItem(category_item, [path, category[:-1]])
+                item.setIcon(0, self.folder_icon if os.path.isdir(path) else self.file_icon)
+                if category != 'root_exclusions':
+                    item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                    item.setCheckState(0, Qt.Checked)
+
+        self.tree_widget.expandAll()
+
+    def get_combined_exclusions(self):
+        """Retrieve exclusions from AutoExcludeManager and merge with project exclusions."""
+        manager_recommendations = self.auto_exclude_manager.get_recommendations()
+
+        root_exclusions = set(self.project_context.settings_manager.get_root_exclusions())
+        excluded_dirs = set(self.project_context.settings_manager.get_excluded_dirs())
+        excluded_files = set(self.project_context.settings_manager.get_excluded_files())
+
+        combined_exclusions = {
+            'root_exclusions': manager_recommendations.get('root_exclusions', set()) | root_exclusions,
+            'excluded_dirs': manager_recommendations.get('excluded_dirs', set()) | excluded_dirs,
+            'excluded_files': manager_recommendations.get('excluded_files', set()) | excluded_files
+        }
+
+        return combined_exclusions
 
     def apply_exclusions(self):
-        current_settings = self.settings_manager.settings
-        excluded_dirs = set(current_settings.get('excluded_dirs', []))
-        excluded_files = set(current_settings.get('excluded_files', []))
-
-        for exclusion_type, items in self.checkboxes.items():
-            for item, checkbox in items.items():
-                if checkbox.isChecked() and item != 'group':
-                    if exclusion_type == 'directories':
-                        excluded_dirs.add(item)
-                    else:
-                        excluded_files.add(item)
-
-        self.settings_manager.update_settings({
-            'excluded_dirs': list(excluded_dirs),
-            'excluded_files': list(excluded_files)
-        })
+        self.auto_exclude_manager.apply_recommendations()
+        QMessageBox.information(self, "Exclusions Updated", "Exclusions have been successfully updated.")
         self.close()
 
     def update_recommendations(self, formatted_recommendations):
         self.formatted_recommendations = formatted_recommendations
-        recommendations_text = self.findChild(QTextEdit)
-        if recommendations_text:
-            recommendations_text.setPlainText(self.formatted_recommendations)
+        self.populate_tree()
+
+    def closeEvent(self, event):
+        super().closeEvent(event)

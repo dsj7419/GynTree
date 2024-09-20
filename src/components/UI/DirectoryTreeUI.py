@@ -4,7 +4,8 @@ It creates an interactive tree view of the analyzed directory, allowing users to
 explore the structure visually. The class also provides options for collapsing/expanding
 nodes and exporting the tree view in different formats.
 """
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QTreeWidget, QPushButton, QHBoxLayout, QTreeWidgetItem, QHeaderView)
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QTreeWidget, QPushButton,
+                             QHBoxLayout, QTreeWidgetItem, QHeaderView)
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, QSize
 from components.TreeExporter import TreeExporter

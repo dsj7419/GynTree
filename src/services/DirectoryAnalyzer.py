@@ -1,58 +1,33 @@
-"""
-GynTree: This module is responsible for analyzing directory structures.
-It provides functionality to traverse directories, collect file information,
-and generate both hierarchical and flat representations of the directory structure.
-The DirectoryAnalyzer class is the core component for directory analysis operations.
-"""
+import logging
+from typing import Dict, Any
+from services.DirectoryStructureService import DirectoryStructureService
+import threading
 
-import os
-from services.CommentParser import CommentParser
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class DirectoryAnalyzer:
-    def __init__(self, start_dir, settings_manager):
-        self.start_dir = os.path.normpath(start_dir)
-        self.settings_manager = settings_manager
-        self.comment_parser = CommentParser()
+    def __init__(self, start_dir: str, settings_manager):
+        self.start_dir = start_dir
+        self.directory_structure_service = DirectoryStructureService(settings_manager)
+        self._stop_event = threading.Event()
 
-    def analyze_directory(self):
-        return self._analyze_recursive(self.start_dir)
+    def analyze_directory(self) -> Dict[str, Any]:
+        """
+        Analyze the directory and return a hierarchical structure.
+        """
+        logger.debug(f"Analyzing directory hierarchy for: {self.start_dir}")
+        return self.directory_structure_service.get_hierarchical_structure(self.start_dir, self._stop_event)
 
-    def get_flat_structure(self):
-        flat_structure = []
-        for root, _, files in os.walk(self.start_dir):
-            if self.settings_manager.is_excluded_dir(root):
-                continue
-            for file in files:
-                full_path = os.path.join(root, file)
-                if not self.settings_manager.is_excluded_file(full_path):
-                    flat_structure.append({
-                        'path': full_path,
-                        'description': self.comment_parser.get_file_purpose(full_path)
-                    })
-        return flat_structure
+    def get_flat_structure(self) -> Dict[str, Any]:
+        """
+        Get a flat structure of the directory.
+        """
+        logger.debug(f"Generating flat directory structure for: {self.start_dir}")
+        return self.directory_structure_service.get_flat_structure(self.start_dir, self._stop_event)
 
-    def _analyze_recursive(self, current_dir):
-        structure = {
-            'name': os.path.basename(current_dir),
-            'type': 'Directory',
-            'path': current_dir,
-            'children': []
-        }
-
-        for item in os.listdir(current_dir):
-            full_path = os.path.join(current_dir, item)
-            
-            if self.settings_manager.is_excluded_dir(full_path) or self.settings_manager.is_excluded_file(full_path):
-                continue
-
-            if os.path.isdir(full_path):
-                structure['children'].append(self._analyze_recursive(full_path))
-            else:
-                file_info = {
-                    'name': item,
-                    'type': 'File',
-                    'path': full_path,
-                }
-                structure['children'].append(file_info)
-
-        return structure
+    def stop(self):
+        """
+        Signal the analysis to stop.
+        """
+        self._stop_event.set()

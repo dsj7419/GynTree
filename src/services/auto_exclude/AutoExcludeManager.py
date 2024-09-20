@@ -1,61 +1,59 @@
-# GynTree: Manages the automatic exclusion rules for files and directories during analysis.
-
 import os
 import logging
-from typing import List, Dict
+from typing import List, Dict, Set
 from services.ExclusionService import ExclusionService
-from services.ProjectTypeDetector import ProjectTypeDetector
 from services.ExclusionServiceFactory import ExclusionServiceFactory
-from services.ExclusionAggregator import ExclusionAggregator
+from services.ProjectTypeDetector import ProjectTypeDetector
+from services.SettingsManager import SettingsManager
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class AutoExcludeManager:
-    def __init__(self, start_directory: str):
-        self.start_directory = start_directory
-        self.project_types = ProjectTypeDetector(start_directory).detect_project_types()
-        logger.debug(f"Detected project types: {self.project_types}")
-        self.exclusion_services: List[ExclusionService] = ExclusionServiceFactory.create_services(self.project_types, start_directory)
+    def __init__(self, start_directory: str, settings_manager: SettingsManager, project_types: Set[str], project_type_detector: ProjectTypeDetector):
+        self.start_directory = os.path.abspath(start_directory)
+        self.settings_manager = settings_manager
+        self.project_types = project_types
+        self.exclusion_services: List[ExclusionService] = ExclusionServiceFactory.create_services(
+            project_types,
+            self.start_directory,
+            project_type_detector,
+            settings_manager
+        )
         logger.debug(f"Created exclusion services: {[type(service).__name__ for service in self.exclusion_services]}")
-        self.raw_recommendations = None
-        self.formatted_recommendations = None
+        self.raw_recommendations: Dict[str, Set[str]] = {'root_exclusions': set(), 'excluded_dirs': set(), 'excluded_files': set()}
 
-    def get_grouped_recommendations(self, current_settings: Dict[str, List[str]]) -> Dict[str, set]:
-        if self.raw_recommendations is None:
-            self.raw_recommendations = {'directories': set(), 'files': set()}
-            excluded_dirs = set(current_settings.get('excluded_dirs', []))
-            excluded_files = set(current_settings.get('excluded_files', []))
-            
-            for service in self.exclusion_services:
-                service_exclusions = service.get_exclusions()
-                logger.debug(f"Exclusions from {type(service).__name__}: {service_exclusions}")
-                for dir_path in service_exclusions['directories']:
-                    if not any(os.path.normpath(dir_path).startswith(os.path.normpath(excluded_dir)) for excluded_dir in excluded_dirs):
-                        self.raw_recommendations['directories'].add(dir_path)
-                for file_path in service_exclusions['files']:
-                    if file_path not in excluded_files:
-                        self.raw_recommendations['files'].add(file_path)
-            
-            self.formatted_recommendations = ExclusionAggregator.format_aggregated_exclusions(
-                ExclusionAggregator.aggregate_exclusions(self.raw_recommendations)
-            )
-            
-            logger.debug(f"Formatted recommendations:\n{self.formatted_recommendations}")
+    def get_recommendations(self) -> Dict[str, Set[str]]:
+        self.raw_recommendations = {'root_exclusions': set(), 'excluded_dirs': set(), 'excluded_files': set()}
         
+        for service in self.exclusion_services:
+            service_exclusions = service.get_exclusions()
+            for category in ['root_exclusions', 'excluded_dirs', 'excluded_files']:
+                self.raw_recommendations[category].update(service_exclusions.get(category, set()))
+
+        # Filter out already excluded items
+        for category in ['root_exclusions', 'excluded_dirs', 'excluded_files']:
+            self.raw_recommendations[category] = {
+                path for path in self.raw_recommendations[category]
+                if not self.settings_manager.is_excluded(os.path.join(self.start_directory, path))
+            }
+
         return self.raw_recommendations
 
     def get_formatted_recommendations(self) -> str:
-        if self.formatted_recommendations is None:
-            self.get_grouped_recommendations({})
-        return self.formatted_recommendations
+        recommendations = self.get_recommendations()
+        lines = []
+        for category in ['root_exclusions', 'excluded_dirs', 'excluded_files']:
+            if recommendations[category]:
+                lines.append(f"{category.replace('_', ' ').title()}:")
+                for path in sorted(recommendations[category]):
+                    lines.append(f" - {path}")
+                lines.append("")
+        return "\n".join(lines)
 
-    def check_for_new_exclusions(self, current_settings: Dict[str, List[str]]) -> bool:
-        raw_recommendations = self.get_grouped_recommendations(current_settings)
-        excluded_dirs = set(current_settings.get('excluded_dirs', []))
-        excluded_files = set(current_settings.get('excluded_files', []))
-
-        new_dirs = raw_recommendations['directories'] - excluded_dirs
-        new_files = raw_recommendations['files'] - excluded_files
-
-        return bool(new_dirs or new_files)
+    def apply_recommendations(self):
+        recommendations = self.get_recommendations()
+        current_settings = self.settings_manager.settings
+        current_settings['root_exclusions'] = list(set(current_settings.get('root_exclusions', [])) | recommendations['root_exclusions'])
+        current_settings['excluded_dirs'] = list(set(current_settings.get('excluded_dirs', [])) | recommendations['excluded_dirs'])
+        current_settings['excluded_files'] = list(set(current_settings.get('excluded_files', [])) | recommendations['excluded_files'])
+        self.settings_manager.update_settings(current_settings)

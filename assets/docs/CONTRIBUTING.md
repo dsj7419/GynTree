@@ -4,7 +4,7 @@ First off, thank you for considering contributing to GynTree! It's people like y
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md). Please report unacceptable behavior to [project_email@example.com](mailto:project_email@example.com).
+By participating in this project, you are expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md). Please report unacceptable behavior to [dsj7419@gmail.com](mailto:dsj7419@gmail.com).
 
 ## How Can I Contribute?
 

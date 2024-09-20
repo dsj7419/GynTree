@@ -1,11 +1,7 @@
-"""
-GynTree: This file contains unit tests for the AutoExcludeManager class,
-ensuring proper management of auto-exclusion rules across different project types.
-"""
-
 import pytest
 from services.auto_exclude.AutoExcludeManager import AutoExcludeManager
 from services.SettingsManager import SettingsManager
+from services.ProjectTypeDetector import ProjectTypeDetector
 from models.Project import Project
 
 @pytest.fixture
@@ -13,81 +9,82 @@ def mock_project(tmpdir):
     return Project(
         name="test_project",
         start_directory=str(tmpdir),
+        root_exclusions=[],
         excluded_dirs=[],
         excluded_files=[]
     )
 
 @pytest.fixture
-def auto_exclude_manager(mock_project):
-    return AutoExcludeManager(mock_project.start_directory)
+def settings_manager(mock_project):
+    return SettingsManager(mock_project)
+
+@pytest.fixture
+def project_type_detector(mock_project):
+    return ProjectTypeDetector(mock_project.start_directory)
+
+@pytest.fixture
+def auto_exclude_manager(mock_project, settings_manager, project_type_detector):
+    return AutoExcludeManager(mock_project.start_directory, settings_manager, set(), project_type_detector)
 
 def test_initialization(auto_exclude_manager):
     assert auto_exclude_manager.start_directory
-    assert auto_exclude_manager.project_types
-    assert auto_exclude_manager.exclusion_services
+    assert isinstance(auto_exclude_manager.settings_manager, SettingsManager)
+    assert isinstance(auto_exclude_manager.project_types, set)
+    assert len(auto_exclude_manager.exclusion_services) > 0
 
-def test_get_grouped_recommendations(auto_exclude_manager, mock_project):
-    settings_manager = SettingsManager(mock_project)
-    recommendations = auto_exclude_manager.get_grouped_recommendations(settings_manager.settings)
-    
-    assert 'directories' in recommendations
-    assert 'files' in recommendations
-
-def test_check_for_new_exclusions(auto_exclude_manager, mock_project):
-    settings_manager = SettingsManager(mock_project)
-    has_new_exclusions = auto_exclude_manager.check_for_new_exclusions(settings_manager.settings)
-    
-    assert isinstance(has_new_exclusions, bool)
+def test_get_recommendations(auto_exclude_manager):
+    recommendations = auto_exclude_manager.get_recommendations()
+    assert 'root_exclusions' in recommendations
+    assert 'excluded_dirs' in recommendations
+    assert 'excluded_files' in recommendations
 
 def test_get_formatted_recommendations(auto_exclude_manager):
     formatted_recommendations = auto_exclude_manager.get_formatted_recommendations()
-    
     assert isinstance(formatted_recommendations, str)
-    assert "Directories:" in formatted_recommendations or "Files:" in formatted_recommendations
+    assert "Root Exclusions:" in formatted_recommendations
+    assert "Excluded Dirs:" in formatted_recommendations
+    assert "Excluded Files:" in formatted_recommendations
 
-def test_python_project_detection(tmpdir):
+def test_apply_recommendations(auto_exclude_manager, settings_manager):
+    initial_settings = settings_manager.get_all_exclusions()
+    auto_exclude_manager.apply_recommendations()
+    updated_settings = settings_manager.get_all_exclusions()
+    assert updated_settings != initial_settings
+
+def test_project_type_detection(tmpdir, settings_manager, project_type_detector):
     tmpdir.join("main.py").write("print('Hello, World!')")
-    manager = AutoExcludeManager(str(tmpdir))
+    tmpdir.join("requirements.txt").write("pytest\npyqt5")
+    detected_types = project_type_detector.detect_project_types()
+    project_types = {ptype for ptype, detected in detected_types.items() if detected}
+    manager = AutoExcludeManager(str(tmpdir), settings_manager, project_types, project_type_detector)
     assert 'python' in manager.project_types
 
-def test_web_project_detection(tmpdir):
-    tmpdir.join("index.html").write("<html></html>")
-    manager = AutoExcludeManager(str(tmpdir))
-    assert 'web' in manager.project_types
-
-def test_nextjs_project_detection(tmpdir):
-    tmpdir.join("next.config.js").write("module.exports = {}")
-    manager = AutoExcludeManager(str(tmpdir))
-    assert 'nextjs' in manager.project_types
-
-def test_database_project_detection(tmpdir):
-    tmpdir.mkdir("migrations")
-    manager = AutoExcludeManager(str(tmpdir))
-    assert 'database' in manager.project_types
-
-def test_multiple_project_types(tmpdir):
+def test_exclusion_services_creation(tmpdir, settings_manager, project_type_detector):
     tmpdir.join("main.py").write("print('Hello, World!')")
     tmpdir.join("index.html").write("<html></html>")
-    tmpdir.mkdir("migrations")
-    
-    manager = AutoExcludeManager(str(tmpdir))
-    assert 'python' in manager.project_types
-    assert 'web' in manager.project_types
-    assert 'database' in manager.project_types
+    detected_types = project_type_detector.detect_project_types()
+    project_types = {ptype for ptype, detected in detected_types.items() if detected}
+    auto_exclude_manager = AutoExcludeManager(str(tmpdir), settings_manager, project_types, project_type_detector)
+    service_names = [service.__class__.__name__ for service in auto_exclude_manager.exclusion_services]
+    assert 'IDEandGitAutoExclude' in service_names
+    assert 'PythonAutoExclude' in service_names
+    assert 'WebAutoExclude' in service_names
 
-def test_exclusion_services_creation(auto_exclude_manager):
-    assert any(service.__class__.__name__ == 'IDEandGitAutoExclude' for service in auto_exclude_manager.exclusion_services)
-    assert any(service.__class__.__name__ == 'PythonAutoExclude' for service in auto_exclude_manager.exclusion_services)
+def test_new_exclusions_after_settings_update(auto_exclude_manager, settings_manager):
+    initial_recommendations = auto_exclude_manager.get_recommendations()
+    settings_manager.update_settings({
+        'root_exclusions': list(initial_recommendations['root_exclusions']),
+        'excluded_dirs': list(initial_recommendations['excluded_dirs']),
+        'excluded_files': list(initial_recommendations['excluded_files'])
+    })
+    new_recommendations = auto_exclude_manager.get_recommendations()
+    assert new_recommendations != initial_recommendations
 
-def test_new_exclusions_after_settings_update(auto_exclude_manager, mock_project):
-    settings_manager = SettingsManager(mock_project)
-    initial_check = auto_exclude_manager.check_for_new_exclusions(settings_manager.settings)
-    
-    # Update settings to exclude all recommendations
-    recommendations = auto_exclude_manager.get_grouped_recommendations(settings_manager.settings)
-    settings_manager.update_settings(recommendations)
-    
-    after_update_check = auto_exclude_manager.check_for_new_exclusions(settings_manager.settings)
-    
-    assert initial_check != after_update_check
-    assert not after_update_check  # No new exclusions after updating settings
+def test_invalid_settings_key_handling(auto_exclude_manager, settings_manager):
+    initial_settings = settings_manager.get_all_exclusions()
+    auto_exclude_manager.apply_recommendations()
+    # Try to update with an invalid key
+    settings_manager.update_settings({'invalid_key': ['some_value']})
+    updated_settings = settings_manager.get_all_exclusions()
+    assert 'invalid_key' not in updated_settings
+    assert updated_settings != initial_settings

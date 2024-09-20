@@ -1,65 +1,89 @@
-# GynTree: This module provides utilities for aggregating and formatting file/directory exclusions.
 import os
 from collections import defaultdict
+from typing import Dict, Set
 
 class ExclusionAggregator:
     @staticmethod
-    def aggregate_exclusions(exclusions):
+    def aggregate_exclusions(exclusions: Dict[str, Set[str]]) -> Dict[str, Dict[str, Set[str]]]:
         aggregated = {
-            'directories': defaultdict(set),
-            'files': defaultdict(set)
+            'root_exclusions': set(),
+            'excluded_dirs': defaultdict(set),
+            'excluded_files': defaultdict(set)
         }
+
+        root_exclusions = exclusions.get('root_exclusions', set())
+        for item in root_exclusions:
+            aggregated['root_exclusions'].add(os.path.normpath(item))
+
         for exclusion_type, items in exclusions.items():
+            if exclusion_type == 'root_exclusions':
+                continue 
+
             for item in items:
-                base_name = os.path.basename(item)
-                parent_dir = os.path.dirname(item)
-                if exclusion_type == 'directories':
-                    if base_name in ['__pycache__', '.git', 'venv', '.venv', 'env', '.vs', '_internal']:
-                        aggregated['directories']['common'].add(base_name)
-                    elif base_name in ['build', 'dist']:
-                        aggregated['directories']['build'].add(base_name)
+                normalized_item = os.path.normpath(item)
+                
+                if any(normalized_item.startswith(root_dir) for root_dir in root_exclusions):
+                    continue
+
+                base_name = os.path.basename(normalized_item)
+                parent_dir = os.path.dirname(normalized_item)
+
+                if exclusion_type == 'excluded_dirs':
+                    if base_name in ['node_modules', '__pycache__', '.git', 'venv', '.venv', 'env', '.vs', '_internal', '.next', 'public', 'dist', 'build', 'out', 'migrations']:
+                        aggregated['excluded_dirs']['common'].add(base_name)
+                    elif base_name in ['prisma', 'src', 'components', 'pages', 'api']:
+                        aggregated['excluded_dirs']['app structure'].add(base_name)
                     else:
-                        # Check if it's not a subdirectory of an already excluded directory
-                        if not any(item.startswith(excluded) for excluded in aggregated['directories']['common'] | aggregated['directories']['build']):
-                            aggregated['directories']['other'].add(item)
-                elif exclusion_type == 'files':
-                    if base_name.endswith('.pyc'):
-                        aggregated['files']['pyc'].add(parent_dir)
-                    elif base_name in ['.gitignore', '.dockerignore', '.vsignore', 'requirements.txt']:
-                        aggregated['files']['ignore'].add(base_name)
+                        aggregated['excluded_dirs']['other'].add(base_name)
+                elif exclusion_type == 'excluded_files':
+                    if normalized_item.endswith(('.pyc', '.pyo', '.pyd')):
+                        aggregated['excluded_files']['cache'].add(normalized_item)
+                    elif base_name in ['.gitignore', '.dockerignore', '.eslintrc.cjs', '.npmrc', '.env', '.env.development', 'next-env.d.ts', 'next.config.js', 'postcss.config.cjs', 'prettier.config.js', 'tailwind.config.ts', 'tsconfig.json']:
+                        aggregated['excluded_files']['config'].add(base_name)
                     elif base_name == '__init__.py':
-                        aggregated['files']['init'].add(parent_dir)
+                        aggregated['excluded_files']['init'].add(parent_dir)
+                    elif base_name.endswith(('.js', '.cjs', '.mjs', '.ts', '.tsx', '.jsx')):
+                        aggregated['excluded_files']['script'].add(base_name)
+                    elif base_name.endswith(('.sql', '.sqlite', '.db')):
+                        aggregated['excluded_files']['database'].add(base_name)
+                    elif base_name.endswith(('.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg')):
+                        aggregated['excluded_files']['asset'].add(base_name)
+                    elif base_name in ['package.json', 'pnpm-lock.yaml', 'yarn.lock', 'package-lock.json']:
+                        aggregated['excluded_files']['package'].add(base_name)
+                    elif base_name.endswith(('.md', '.txt')):
+                        aggregated['excluded_files']['document'].add(base_name)
+                    elif base_name.endswith(('.css', '.scss', '.less')):
+                        aggregated['excluded_files']['style'].add(base_name)
                     else:
-                        aggregated['files']['other'].add(item)
+                        aggregated['excluded_files']['other'].add(base_name)
+
         return aggregated
 
     @staticmethod
-    def format_aggregated_exclusions(aggregated):
+    def format_aggregated_exclusions(aggregated: Dict[str, Dict[str, Set[str]]]) -> str:
         formatted = []
-        if aggregated['directories']:
-            formatted.append("Directories:")
-            for category, items in aggregated['directories'].items():
+
+        if aggregated['root_exclusions']:
+            formatted.append("Root Exclusions:")
+            for item in sorted(aggregated['root_exclusions']):
+                formatted.append(f" - {item}")
+
+        if aggregated['excluded_dirs']:
+            formatted.append("\nDirectories:")
+            for category, items in aggregated['excluded_dirs'].items():
                 if items:
-                    if category == 'common':
-                        formatted.append(f"  Common: {', '.join(sorted(items))}")
-                    elif category == 'build':
-                        formatted.append(f"  Build: {', '.join(sorted(items))}")
-                    elif category == 'other':
-                        formatted.append("  Other:")
-                        for item in sorted(items):
-                            formatted.append(f"    - {item}")
-        if aggregated['files']:
-            formatted.append("Files:")
-            for category, items in aggregated['files'].items():
+                    formatted.append(f" {category.capitalize()}: {', '.join(sorted(items))}")
+
+        if aggregated['excluded_files']:
+            formatted.append("\nFiles:")
+            for category, items in aggregated['excluded_files'].items():
                 if items:
-                    if category == 'pyc':
-                        formatted.append(f"  Python Cache: {len(items)} directories with .pyc files")
-                    elif category == 'ignore':
-                        formatted.append(f"  Ignore Files: {', '.join(sorted(items))}")
-                    elif category == 'init':
-                        formatted.append(f"  __init__.py: {len(items)} directories")
-                    elif category == 'other':
-                        formatted.append("  Other:")
-                        for item in sorted(items):
-                            formatted.append(f"    - {item}")
+                    if category in ['cache', 'init']:
+                        formatted.append(f" {category.capitalize()}: {len(items)} items")
+                    else:
+                        formatted.append(f" {category.capitalize()}: {len(items)} items")
+                        if category == 'other' and len(items) <= 5:
+                            for item in sorted(items):
+                                formatted.append(f"  - {item}")
+
         return "\n".join(formatted)

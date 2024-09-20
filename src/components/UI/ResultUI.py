@@ -1,22 +1,15 @@
-"""
-GynTree: This module defines the ResultUI class, which displays the directory analysis results.
-It provides a user-friendly interface for viewing, copying, and exporting analysis data.
-The ResultUI class handles the presentation of analysis results in a tabular format,
-offering features like adjustable columns and various export options.
-"""
-
-from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QPushButton,
-                             QFileDialog, QWidget, QHBoxLayout, QTableWidget, 
-                             QTableWidgetItem, QHeaderView, QApplication, QSplitter,
-                             QDesktopWidget)
+from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QPushButton, QFileDialog, QWidget,
+                             QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QApplication,
+                             QSplitter, QDesktopWidget)
 from PyQt5.QtGui import QIcon, QFont, QPalette, QColor
 from PyQt5.QtCore import Qt, QTimer
 import csv
 from utilities.resource_path import get_resource_path
 
 class ResultUI(QMainWindow):
-    def __init__(self):
+    def __init__(self, directory_analyzer):
         super().__init__()
+        self.directory_analyzer = directory_analyzer
         self.result_data = None
         self.init_ui()
 
@@ -92,11 +85,11 @@ class ResultUI(QMainWindow):
         height = int(screen.height() * 0.8)
         self.setGeometry(int(screen.width() * 0.1), int(screen.height() * 0.1), width, height)
 
-    def update_result(self, result):
-        self.result_data = result
-        self.result_table.setRowCount(len(result))
+    def update_result(self):
+        self.result_data = self.directory_analyzer.get_flat_structure()
+        self.result_table.setRowCount(len(self.result_data))
         max_path_width = 0
-        for row, item in enumerate(result):
+        for row, item in enumerate(self.result_data):
             path_item = QTableWidgetItem(item['path'])
             self.result_table.setItem(row, 0, path_item)
             self.result_table.setItem(row, 1, QTableWidgetItem(item['description']))
@@ -149,3 +142,6 @@ class ResultUI(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.adjust_column_widths()
+
+    def refresh_display(self):
+        self.update_result()
