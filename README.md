@@ -2,7 +2,9 @@
 
 GynTree is a powerful Python application designed to analyze and visualize complex directory structures, providing deep insights into your project's architecture. Whether you're managing a large codebase, organizing a media library, or just trying to understand the layout of a new project, GynTree has got you covered.
 
-![GynTree Logo](./assets/images/GynTree_logo.png)
+| ![GynTree Logo](./assets/images/GynTree_logo.png) | ![GynTree Analysis View](./assets/images/GynTreeAnalysisView.png) | ![GynTree Directory View](./assets/images/GynTreeDirectoryView.png) |
+|:-------------------------------------------------:|:---------------------------------------------------------------:|:---------------------------------------------------------------:|
+|                                       | GynTree Analysis View                                           | GynTree Directory View                                          |
 
 ## 🌟 Key Features
 
