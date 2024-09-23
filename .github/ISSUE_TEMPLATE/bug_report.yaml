@@ -1,0 +1,70 @@
+name: Bug Report
+description: Report a problem with GynTree
+title: '[Bug]: '
+labels: ['bug']
+body:
+
+- type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to fill out this bug report. We greatly appreciate your effort to complete this template fully. Please provide as much information as possible to help us understand and address the issue effectively.
+
+- type: checkboxes
+    attributes:
+      label: Is there an existing issue for the same bug?
+      description: Please check if an issue already exists for the bug you encountered.
+      options:
+        - label: I have checked the troubleshooting documentation.
+          required: true
+        - label: I have checked the existing issues.
+          required: true
+
+- type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the bug
+      description: Provide a short description of the problem you encountered in GynTree.
+    validations:
+      required: true
+
+- type: textarea
+    id: current-version
+    attributes:
+      label: Current GynTree Version
+      description: What version of GynTree are you using? If available, please provide the release or build version.
+      render: bash
+    validations:
+      required: true
+
+- type: textarea
+    id: config
+    attributes:
+      label: Installation and Configuration
+      description: Provide details about your installation setup, including commands or configuration files (please redact any sensitive information like API keys).
+      render: bash
+    validations:
+      required: true
+
+- type: textarea
+    id: os-version
+    attributes:
+      label: Operating System
+      description: Specify your operating system (e.g., Windows, Mac OS, Linux) and version.
+    validations:
+      required: true
+
+- type: textarea
+    id: repro-steps
+    attributes:
+      label: Reproduction Steps
+      description: Please provide the steps to reproduce the issue you encountered.
+      placeholder: |
+        1.
+        2.
+        3.
+
+- type: textarea
+    id: logs
+    attributes:
+      label: Logs, Errors, Screenshots, and Additional Context
+      description: Add any logs, error messages, screenshots, or other relevant details that can help diagnose the issue.
