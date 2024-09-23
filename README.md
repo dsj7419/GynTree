@@ -19,7 +19,13 @@ GynTree is a powerful Python application designed to analyze and visualize compl
 
 ## 🚀 Getting Started
 
-Ready to dive in? Check out our [Installation Guide](./assets/docs/INSTALL.md) to get GynTree up and running on your system in no time!
+Ready to dive in? You have two options:
+
+1. **Download the Standalone Application**:  
+   Get the latest version of GynTree as a standalone application directly from the [Latest Release](https://github.com/dsj7419/GynTree/releases/latest).
+
+2. **Install from Source**:  
+   Check out our [Installation Guide](./assets/docs/INSTALL.md) to get GynTree up and running from the source code on your system in no time!
 
 ## 📖 Documentation
 
@@ -37,7 +43,7 @@ GynTree is licensed under the Mozilla Public License, version 2.0. See the [LICE
 
 ## 🙏 Acknowledgements
 
-A big thank you to all our contributors and the open-source community for their invaluable input and support. This project is started for personal use, but I hope others find it useful and can benefit from it. I would love additional help and insight to evolve this project even more.
+This is not my sole focus, and there's still a lot to do! I'll try to keep issues/project board populated, let me know if you'd like to take anything on! This project is started for personal use, but I hope others find it useful and can benefit from it. I would love additional help and insight to evolve this project even more.
 
 ---
 

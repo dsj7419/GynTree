@@ -1,6 +1,6 @@
 # Contributing to GynTree
 
-First off, thank you for considering contributing to GynTree! It's people like you that make GynTree such a great tool. We welcome contributions from everyone, whether it's a bug report, feature suggestion, or code contribution.
+First off, thank you for considering contributing to GynTree! I welcome contributions from everyone, whether it's a bug report, feature suggestion, or code contribution.
 
 ## Code of Conduct
 
@@ -8,21 +8,32 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 
 ## How Can I Contribute?
 
+## 🤝 Contributing
+
+We welcome contributions from the community! Whether you're submitting a bug report, suggesting an enhancement, or contributing code, please follow the guidelines below to ensure a smooth and productive collaboration.
+
 ### Reporting Bugs
 
-This section guides you through submitting a bug report for GynTree. Following these guidelines helps maintainers and the community understand your report, reproduce the behavior, and find related reports.
+To submit a bug report, please follow our [Bug Report Template](./.github/ISSUE_TEMPLATE/bug_report.md). This helps maintainers and the community understand your report, reproduce the issue, and identify related problems.
 
-- Use a clear and descriptive title for the issue to identify the problem.
-- Describe the exact steps which reproduce the problem in as many details as possible.
-- Provide specific examples to demonstrate the steps.
+- **Title**: Use a clear and descriptive title for the issue.
+- **Steps to Reproduce**: Provide a step-by-step description of how to reproduce the issue in as much detail as possible.
+- **Expected Behavior**: Explain what you expected to happen.
+- **Screenshots**: Include any relevant screenshots that might help explain the problem.
+- **Additional Context**: Include your system details (e.g., OS version) and any other context that may be useful.
+
+You can submit a bug report using this [Bug Report Template](https://github.com/dsj7419/GynTree/issues/new?template=bug_report.md).
 
 ### Suggesting Enhancements
 
-This section guides you through submitting an enhancement suggestion for GynTree, including completely new features and minor improvements to existing functionality.
+To suggest an enhancement or new feature, please follow our [Feature Request Template](./.github/ISSUE_TEMPLATE/feature_request.md). This ensures your suggestion is well understood by maintainers and other contributors.
 
-- Use a clear and descriptive title for the issue to identify the suggestion.
-- Provide a step-by-step description of the suggested enhancement in as many details as possible.
-- Explain why this enhancement would be useful to most GynTree users.
+- **Title**: Use a clear and descriptive title for the suggestion.
+- **Description**: Provide a detailed description of the suggested enhancement, including any steps required to implement it.
+- **Use Case**: Explain why this enhancement would be useful for most GynTree users.
+- **Additional Context**: Include any relevant details or screenshots to clarify your suggestion.
+
+You can submit an enhancement suggestion using this [Feature Request Template](https://github.com/dsj7419/GynTree/issues/new?template=feature_request.md).
 
 ### Your First Code Contribution
 
@@ -62,15 +73,37 @@ All Python code must adhere to the [PEP 8 style guide](https://www.python.org/de
 
 ### Issue and Pull Request Labels
 
-This section lists the labels we use to help us track and manage issues and pull requests.
+We use labels to categorize and prioritize issues and pull requests. Here's a breakdown of the labels we use:
 
-- `bug` - Issues for bugs in the code
-- `enhancement` - Issues for new features or improvements
-- `documentation` - Issues related to documentation
-- `good first issue` - Good for newcomers
+#### **Type of Issue**
+
+- `bug` - Something isn't working as expected or is broken.
+- `enhancement` - New feature requests or improvements to existing functionality.
+- `documentation` - Improvements or additions to the project's documentation.
+- `question` - Further information is requested to clarify an issue or pull request.
+- `duplicate` - This issue or pull request already exists or has been addressed.
+- `invalid` - The issue or pull request is not valid or does not follow the guidelines.
+- `wontfix` - Issues or features that have been decided will not be worked on.
+
+#### **Priority**
+
+- `high-priority` - Critical tasks that need to be addressed urgently.
+- `medium-priority` - Tasks that are of moderate importance.
+- `low-priority` - Issues that are less urgent but still need attention.
+
+#### **Status and Assistance**
+
+- `good first issue` - Ideal for newcomers or first-time contributors.
+- `help wanted` - Extra attention or assistance is needed on this issue.
+- `backend` - Issues specifically related to backend functionality.
+- `UI` - Issues related to the user interface design and functionality.
+- `test-suite` - Issues concerning the testing framework, test coverage, or failing tests.
+- `performance` - Tasks related to improving application performance.
+
+This labeling system helps us efficiently manage and prioritize issues and pull requests, ensuring that tasks are clearly categorized and receive the appropriate attention.
 
 ## Questions?
 
-Don't hesitate to reach out if you have any questions! Feel free to [open an issue](https://github.com/dsj7419/GynTree/issues) or contact the project maintainers directly.
+Don't hesitate to reach out if you have any questions! Feel free to [open an issue](https://github.com/dsj7419/GynTree/issues) or contact me directly.
 
-Thank you for contributing to GynTree!
+Thank you in advance for contributing to GynTree!
