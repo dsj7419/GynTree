@@ -1,8 +1,13 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget, QTreeWidget, QTreeWidgetItem, QMessageBox, QHeaderView, QHBoxLayout
+from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget,
+                             QTreeWidget, QTreeWidgetItem, QMessageBox, QHeaderView, QHBoxLayout)
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont
 import os
 from utilities.resource_path import get_resource_path
+from utilities.theme_manager import ThemeManager
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AutoExcludeUI(QMainWindow):
     def __init__(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context):
@@ -11,18 +16,17 @@ class AutoExcludeUI(QMainWindow):
         self.settings_manager = settings_manager
         self.formatted_recommendations = formatted_recommendations
         self.project_context = project_context
+        self.theme_manager = ThemeManager.getInstance()
+
         self.folder_icon = QIcon(get_resource_path("assets/images/folder_icon.png"))
         self.file_icon = QIcon(get_resource_path("assets/images/file_icon.png"))
+
         self.setWindowTitle('Auto-Exclude Recommendations')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/gyntree_logo 64x64.ico')))
-        self.setStyleSheet(""" 
-            QMainWindow { background-color: #f0f0f0; }
-            QLabel { font-size: 20px; color: #333; margin-bottom: 10px; }
-            QPushButton { background-color: #4caf50; color: white; padding: 8px 16px; font-size: 14px; margin: 4px 2px; border-radius: 6px; }
-            QPushButton:hover { background-color: #45a049; }
-            QTreeWidget { font-size: 14px; color: #333; background-color: #fff; border: 1px solid #ddd; }
-        """)
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+
         self.init_ui()
+        
+        self.theme_manager.themeChanged.connect(self.apply_theme)
 
     def init_ui(self):
         central_widget = QWidget()
@@ -33,6 +37,7 @@ class AutoExcludeUI(QMainWindow):
         header_layout = QHBoxLayout()
         title_label = QLabel('Auto-Exclude Recommendations', font=QFont('Arial', 16, QFont.Bold))
         header_layout.addWidget(title_label)
+
         collapse_btn = QPushButton('Collapse All')
         expand_btn = QPushButton('Expand All')
         header_layout.addWidget(collapse_btn)
@@ -59,6 +64,8 @@ class AutoExcludeUI(QMainWindow):
 
         self.setCentralWidget(central_widget)
         self.setGeometry(300, 150, 800, 600)
+
+        self.apply_theme()
 
     def populate_tree(self):
         """Populates the tree with merged exclusions from both AutoExcludeManager and project folder."""
@@ -105,6 +112,9 @@ class AutoExcludeUI(QMainWindow):
     def update_recommendations(self, formatted_recommendations):
         self.formatted_recommendations = formatted_recommendations
         self.populate_tree()
+
+    def apply_theme(self):
+        self.theme_manager.apply_theme(self)
 
     def closeEvent(self, event):
         super().closeEvent(event)

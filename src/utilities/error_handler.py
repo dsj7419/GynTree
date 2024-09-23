@@ -14,19 +14,19 @@ class ErrorHandler(QObject):
         super().__init__()
         self.error_occurred.connect(self.show_error_dialog)
 
-    def global_exception_handler(self, exc_type, exc_value, exc_traceback):
+    @classmethod
+    def global_exception_handler(cls, exc_type, exc_value, exc_traceback):
         """Handle uncaught exceptions globally"""
         error_msg = f"An unexpected error occurred:\n{exc_type.__name__}: {exc_value}"
         detailed_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        
         logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
-        
-        self.error_occurred.emit("Critical Error", error_msg)
-        
+        handler = cls()
+        handler.error_occurred.emit("Critical Error", error_msg)
         logger.debug(f"Detailed error traceback:\n{detailed_msg}")
 
-    def show_error_dialog(self, title, message):
-        """Show an error dialog with the given title and message"""
+    @staticmethod
+    def show_error_dialog(title, message):
+        """Show error dialog with the given title and message"""
         QTimer.singleShot(0, lambda: QMessageBox.critical(None, title, message))
 
 def handle_exception(func):
@@ -42,5 +42,4 @@ def handle_exception(func):
     return wrapper
 
 error_handler = ErrorHandler()
-
-sys.excepthook = error_handler.global_exception_handler
+sys.excepthook = ErrorHandler.global_exception_handler

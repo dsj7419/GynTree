@@ -34,7 +34,7 @@ class ProjectManager:
         projects = []
         for filename in os.listdir(self.projects_dir):
             if filename.endswith('.json'):
-                project_name = filename[:-5]  # Remove .json extension
+                project_name = filename[:-5]
                 projects.append(project_name)
         return projects
     

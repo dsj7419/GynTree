@@ -1,0 +1,118 @@
+QMainWindow, QWidget {
+    background-color: #2b2b2b;
+    color: #f0f0f0;
+}
+
+QPushButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 14px;
+    margin: 4px 2px;
+    border-radius: 4px;
+}
+
+QPushButton:hover {
+    background-color: #45a049;
+}
+
+QTreeWidget, QTableWidget {
+    background-color: #363636;
+    alternate-background-color: #2f2f2f;
+    border: 1px solid #555;
+    color: #f0f0f0;
+}
+
+QHeaderView::section {
+    background-color: #404040;
+    padding: 4px;
+    border: 1px solid #555;
+    color: #f0f0f0;
+}
+
+QLabel {
+    color: #f0f0f0;
+}
+
+QLineEdit {
+    background-color: #363636;
+    border: 1px solid #555;
+    padding: 4px;
+    border-radius: 4px;
+    color: #f0f0f0;
+}
+
+QGroupBox {
+    border: 1px solid #555;
+    border-radius: 4px;
+    margin-top: 1ex;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 3px 0 3px;
+    color: #f0f0f0;
+}
+
+QStatusBar {
+    background-color: #404040;
+    color: #f0f0f0;
+}
+
+QScrollBar:vertical {
+    border: none;
+    background: #2b2b2b;
+    width: 10px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #606060;
+    min-height: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: #2b2b2b;
+    height: 10px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #606060;
+    min-width: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+
+QMenu {
+    background-color: #363636;
+    border: 1px solid #555;
+}
+
+QMenu::item {
+    padding: 5px 20px 5px 20px;
+    color: #f0f0f0;
+}
+
+QMenu::item:selected {
+    background-color: #404040;
+}
+
+QToolTip {
+    background-color: #363636;
+    color: #f0f0f0;
+    border: 1px solid #555;
+}

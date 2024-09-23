@@ -31,7 +31,6 @@ class TreeExporter:
         temp_tree.setColumnWidth(0, name_column_width + 20) 
         temp_tree.setColumnWidth(1, type_column_width)
 
-        # Calculate the full size of the tree
         total_width = name_column_width + type_column_width + 40 
         total_height = 0
         iterator = QTreeWidgetItemIterator(temp_tree, QTreeWidgetItemIterator.All)

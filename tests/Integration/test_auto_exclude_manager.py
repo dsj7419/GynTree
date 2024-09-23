@@ -4,6 +4,8 @@ from services.SettingsManager import SettingsManager
 from services.ProjectTypeDetector import ProjectTypeDetector
 from models.Project import Project
 
+pytestmark = pytest.mark.integration
+
 @pytest.fixture
 def mock_project(tmpdir):
     return Project(
@@ -27,7 +29,7 @@ def auto_exclude_manager(mock_project, settings_manager, project_type_detector):
     return AutoExcludeManager(mock_project.start_directory, settings_manager, set(), project_type_detector)
 
 def test_initialization(auto_exclude_manager):
-    assert auto_exclude_manager.start_directory
+    assert auto_exclude_manager.start_directory is not None
     assert isinstance(auto_exclude_manager.settings_manager, SettingsManager)
     assert isinstance(auto_exclude_manager.project_types, set)
     assert len(auto_exclude_manager.exclusion_services) > 0
@@ -66,7 +68,7 @@ def test_exclusion_services_creation(tmpdir, settings_manager, project_type_dete
     project_types = {ptype for ptype, detected in detected_types.items() if detected}
     auto_exclude_manager = AutoExcludeManager(str(tmpdir), settings_manager, project_types, project_type_detector)
     service_names = [service.__class__.__name__ for service in auto_exclude_manager.exclusion_services]
-    assert 'IDEandGitAutoExclude' in service_names
+    assert 'IDEAndGitAutoExclude' in service_names
     assert 'PythonAutoExclude' in service_names
     assert 'WebAutoExclude' in service_names
 

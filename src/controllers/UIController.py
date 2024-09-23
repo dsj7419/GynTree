@@ -10,6 +10,9 @@ Responsibilities:
 - Provide a clean interface for displaying project information in the main UI.
 """
 
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QMetaObject, Qt
+from PyQt5.QtWidgets import QMessageBox
+from components.UI.ResultUI import ResultUI
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,16 +37,19 @@ class UIController:
         return self.main_ui.manage_exclusions(settings_manager)
 
     def update_project_info(self, project):
-        """Update the project information displayed in the UI."""
+        """Update project information displayed in the UI."""
         self.main_ui.update_project_info(project)
 
     def view_directory_tree(self, result):
-        """Show directory tree UI given result."""
-        return self.main_ui.view_directory_tree(result)
+        """Show directory tree UI given the result."""
+        return self.main_ui.view_directory_tree_ui(result)
 
     def show_result(self, directory_analyzer):
         """Show result UI given directory analyzer."""
         return self.main_ui.show_result(directory_analyzer)
+    
+    def update_ui(self, component, data):
+        QMetaObject.invokeMethod(component, "update_data", Qt.QueuedConnection, data)
 
     def show_error_message(self, title, message):
         """Display an error message to the user."""

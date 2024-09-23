@@ -1,4 +1,3 @@
-# GynTree: This file configures the test environment for pytest. It adds the src directory to the Python path so that the tests can access the main modules.
 import sys
 import os
 import pytest
@@ -11,17 +10,18 @@ from models.Project import Project
 from services.SettingsManager import SettingsManager
 from services.ProjectTypeDetector import ProjectTypeDetector
 from services.ProjectContext import ProjectContext
+from utilities.theme_manager import ThemeManager
 
 @pytest.fixture(scope="session")
 def qapp():
-    """Create a QApplication instance for the entire test session."""
+    """Create QApplication instance for the entire test session."""
     app = QApplication([])
     yield app
     app.quit()
 
 @pytest.fixture
 def mock_project(tmpdir):
-    """Create a mock Project instance for testing."""
+    """Create a mock project instance for testing."""
     return Project(
         name="test_project",
         start_directory=str(tmpdir),
@@ -32,19 +32,24 @@ def mock_project(tmpdir):
 
 @pytest.fixture
 def settings_manager(mock_project, tmpdir):
-    """Create a SettingsManager instance for testing."""
+    """Create SettingsManager instance for testing."""
     SettingsManager.config_dir = str(tmpdir.mkdir("config"))
     return SettingsManager(mock_project)
 
 @pytest.fixture
 def project_type_detector(tmpdir):
-    """Create a ProjectTypeDetector instance for testing."""
+    """Create ProjectTypeDetector instance for testing."""
     return ProjectTypeDetector(str(tmpdir))
 
 @pytest.fixture
 def project_context(mock_project):
-    """Create a ProjectContext instance for testing."""
+    """Create ProjectContext instance for testing."""
     return ProjectContext(mock_project)
+
+@pytest.fixture
+def theme_manager():
+    """Create ThemeManager instance for testing."""
+    return ThemeManager.get_instance()
 
 @pytest.fixture
 def setup_python_project(tmpdir):
@@ -77,13 +82,13 @@ def create_large_directory_structure(tmpdir):
             for i in range(num_files):
                 file_path = os.path.join(directory, f"file_{i}.txt")
                 with open(file_path, 'w') as f:
-                    f.write(f"# gyntree: Test file {i}")
+                    f.write(f"# GynTree: Test file {i}")
 
         def create_dirs(root, current_depth):
             if current_depth > depth:
                 return
             create_files(root, files_per_dir)
-            for i in range(5):  # Create 5 subdirectories
+            for i in range(5): 
                 subdir = os.path.join(root, f"dir_{i}")
                 os.mkdir(subdir)
                 create_dirs(subdir, current_depth + 1)
@@ -94,7 +99,9 @@ def create_large_directory_structure(tmpdir):
     return _create_large_directory_structure
 
 def pytest_configure(config):
-    """Add custom markers to the pytest configuration."""
+    config.addinivalue_line("markers", "unit: marks unit tests")
+    config.addinivalue_line("markers", "integration: marks integration tests")
+    config.addinivalue_line("markers", "performance: marks performance tests")
+    config.addinivalue_line("markers", "functional: marks functional tests")
     config.addinivalue_line("markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')")
-    config.addinivalue_line("markers", "gui: marks tests that require a GUI (deselect with '-m \"not gui\"')")
-    config.addinivalue_line("markers", "memory: marks tests that perform memory profiling")
+    config.addinivalue_line("markers", "gui: marks tests that require GUI (deselect with '-m \"not gui\"')")

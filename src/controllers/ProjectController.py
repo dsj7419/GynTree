@@ -51,6 +51,13 @@ class ProjectController:
         self.current_project = project
         logger.debug(f"Project '{project.name}' set as active.")
 
+    def get_theme_preference(self):
+        return self.project_context.get_theme_preference() if self.project_context else 'light'
+
+    def set_theme_preference(self, theme: str):
+        if self.project_context:
+            self.project_context.set_theme_preference(theme)
+
     def analyze_directory(self):
         """Trigger directory analysis"""
         if self.project_context:
@@ -60,7 +67,7 @@ class ProjectController:
             logger.error("Cannot analyze directory: project_context is None.")
 
     def view_directory_tree(self):
-        """View the directory structure"""
+        """Trigger view of the directory structure"""
         if self.project_context:
             result = self.project_context.get_directory_tree()
             self.app_controller.ui_controller.view_directory_tree(result)

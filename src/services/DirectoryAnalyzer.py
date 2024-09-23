@@ -14,20 +14,20 @@ class DirectoryAnalyzer:
 
     def analyze_directory(self) -> Dict[str, Any]:
         """
-        Analyze the directory and return a hierarchical structure.
+        Analyze directory and return hierarchical structure.
         """
         logger.debug(f"Analyzing directory hierarchy for: {self.start_dir}")
         return self.directory_structure_service.get_hierarchical_structure(self.start_dir, self._stop_event)
 
     def get_flat_structure(self) -> Dict[str, Any]:
         """
-        Get a flat structure of the directory.
+        Get flat structure of directory.
         """
         logger.debug(f"Generating flat directory structure for: {self.start_dir}")
         return self.directory_structure_service.get_flat_structure(self.start_dir, self._stop_event)
 
     def stop(self):
         """
-        Signal the analysis to stop.
+        Signal analysis to stop.
         """
         self._stop_event.set()

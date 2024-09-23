@@ -1,5 +1,6 @@
 import os
-from PyQt5.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QStatusBar, QHBoxLayout
+from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QLabel, 
+                             QStatusBar, QHBoxLayout, QPushButton, QMessageBox)
 from PyQt5.QtGui import QIcon, QFont, QPixmap
 from PyQt5.QtCore import Qt
 from components.UI.ProjectUI import ProjectUI
@@ -7,7 +8,9 @@ from components.UI.AutoExcludeUI import AutoExcludeUI
 from components.UI.ResultUI import ResultUI
 from components.UI.DirectoryTreeUI import DirectoryTreeUI
 from components.UI.ExclusionsManagerUI import ExclusionsManagerUI
+from components.UI.animated_toggle import AnimatedToggle
 from utilities.resource_path import get_resource_path
+from utilities.theme_manager import ThemeManager
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,29 +19,22 @@ class DashboardUI(QMainWindow):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.theme_manager = ThemeManager.getInstance()
         self.project_ui = None
+        self.result_ui = None
+        self.auto_exclude_ui = None
+        self.exclusions_ui = None
+        self.directory_tree_ui = None
+        self.theme_toggle = None
         self.initUI()
+
+        # Connect controller signals
+        self.controller.project_created.connect(self.on_project_created)
+        self.controller.project_loaded.connect(self.on_project_loaded)
 
     def initUI(self):
         self.setWindowTitle('GynTree Dashboard')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/gyntree_logo 64x64.ico')))
-        self.setStyleSheet("""
-            QMainWindow { background-color: #f0f0f0; }
-            QLabel { color: #333; }
-            QPushButton { 
-                background-color: #4CAF50; 
-                color: white; 
-                border: none; 
-                padding: 15px 32px; 
-                text-align: center; 
-                text-decoration: none; 
-                font-size: 16px; 
-                margin: 4px 2px; 
-                border-radius: 8px; 
-            }
-            QPushButton:hover { background-color: #45a049; }
-            QStatusBar { background-color: #333; color: white; }
-        """)
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -50,7 +46,7 @@ class DashboardUI(QMainWindow):
         logo_path = get_resource_path('assets/images/gyntree_logo.png')
         if os.path.exists(logo_path):
             logo_pixmap = QPixmap(logo_path)
-            logo_label.setPixmap(logo_pixmap.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_label.setPixmap(logo_pixmap.scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         else:
             logger.warning(f"Logo file not found at {logo_path}")
 
@@ -63,13 +59,26 @@ class DashboardUI(QMainWindow):
         header_layout.setAlignment(Qt.AlignCenter)
         main_layout.addLayout(header_layout)
 
+        # Animated light/dark theme toggle
+        theme_toggle_layout = QHBoxLayout()
+        self.theme_toggle = AnimatedToggle(
+            checked_color="#FFB000",
+            pulse_checked_color="#44FFB000"
+        )
+        self.theme_toggle.setFixedSize(self.theme_toggle.sizeHint())
+        self.theme_toggle.setChecked(self.theme_manager.get_current_theme() == 'dark')
+        self.theme_toggle.stateChanged.connect(self.toggle_theme)
+        theme_toggle_layout.addWidget(self.theme_toggle)
+        theme_toggle_layout.setAlignment(Qt.AlignRight)
+        main_layout.addLayout(theme_toggle_layout)
+
         self.create_project_btn = self.create_styled_button('Create Project')
         self.load_project_btn = self.create_styled_button('Load Project')
         self.manage_exclusions_btn = self.create_styled_button('Manage Exclusions')
         self.analyze_directory_btn = self.create_styled_button('Analyze Directory')
         self.view_directory_tree_btn = self.create_styled_button('View Directory Tree')
 
-        for btn in [self.create_project_btn, self.load_project_btn, self.manage_exclusions_btn, 
+        for btn in [self.create_project_btn, self.load_project_btn, self.manage_exclusions_btn,
                     self.analyze_directory_btn, self.view_directory_tree_btn]:
             main_layout.addWidget(btn)
 
@@ -85,10 +94,15 @@ class DashboardUI(QMainWindow):
 
         self.setGeometry(300, 300, 800, 600)
 
+        self.theme_manager.apply_theme(self)
+
     def create_styled_button(self, text):
         btn = QPushButton(text)
         btn.setFont(QFont('Arial', 14))
         return btn
+
+    def toggle_theme(self):
+        self.controller.toggle_theme()
 
     def show_dashboard(self):
         self.show()
@@ -100,29 +114,54 @@ class DashboardUI(QMainWindow):
         self.project_ui.show()
         return self.project_ui
 
+    def on_project_created(self, project):
+        logger.info(f"Project created: {project.name}")
+        self.update_project_info(project)
+        self.enable_project_actions()
+
+    def on_project_loaded(self, project):
+        logger.info(f"Project loaded: {project.name}")
+        self.update_project_info(project)
+        self.enable_project_actions()
+
+    def enable_project_actions(self):
+        self.manage_exclusions_btn.setEnabled(True)
+        self.analyze_directory_btn.setEnabled(True)
+        self.view_directory_tree_btn.setEnabled(True)
+
+    def show_auto_exclude_ui(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context):
+        if not self.auto_exclude_ui:
+            self.auto_exclude_ui = AutoExcludeUI(auto_exclude_manager, settings_manager, formatted_recommendations, project_context)
+        self.auto_exclude_ui.show()
+
+    def show_result(self, directory_analyzer):
+        if self.controller.project_controller.project_context:
+            self.result_ui = ResultUI(self.controller, self.theme_manager, directory_analyzer)
+            self.result_ui.show()
+            return self.result_ui
+        else:
+            return None
+
+    def manage_exclusions(self, settings_manager):
+        if self.controller.project_controller.project_context:
+            self.exclusions_ui = ExclusionsManagerUI(self.controller, self.theme_manager, settings_manager)
+            self.exclusions_ui.show()
+            return self.exclusions_ui
+        else:
+            QMessageBox.warning(self, "No Project", "Please load or create a project before managing exclusions.")
+            return None
+
+    def view_directory_tree_ui(self, result):
+        if not self.directory_tree_ui:
+            self.directory_tree_ui = DirectoryTreeUI(self.controller, self.theme_manager)
+        self.directory_tree_ui.update_tree(result)
+        self.directory_tree_ui.show()
+
+
+
     def update_project_info(self, project):
         self.setWindowTitle(f"GynTree - {project.name}")
         self.status_bar.showMessage(f"Current project: {project.name}, Start directory: {project.start_directory}")
-
-    def show_auto_exclude_ui(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context):
-        auto_exclude_ui = AutoExcludeUI(auto_exclude_manager, settings_manager, formatted_recommendations, project_context)
-        auto_exclude_ui.show()
-        return auto_exclude_ui
-
-    def show_result(self, directory_analyzer):
-        result_ui = ResultUI(directory_analyzer)
-        result_ui.show()
-        return result_ui
-
-    def manage_exclusions(self, settings_manager):
-        exclusions_ui = ExclusionsManagerUI(settings_manager)
-        exclusions_ui.show()
-        return exclusions_ui
-
-    def view_directory_tree(self, result):
-        tree_ui = DirectoryTreeUI(result)
-        tree_ui.show()
-        return tree_ui
 
     def clear_directory_tree(self):
         if hasattr(self, 'directory_tree_view'):
@@ -140,5 +179,4 @@ class DashboardUI(QMainWindow):
         logger.debug("Exclusions list cleared")
 
     def show_error_message(self, title, message):
-        from PyQt5.QtWidgets import QMessageBox
         QMessageBox.critical(self, title, message)

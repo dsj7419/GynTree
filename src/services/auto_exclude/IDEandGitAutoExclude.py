@@ -14,12 +14,10 @@ class IDEandGitAutoExclude(ExclusionService):
     def get_exclusions(self) -> Dict[str, Set[str]]:
         recommendations = {'root_exclusions': set(), 'excluded_dirs': set(), 'excluded_files': set()}
 
-        # Common root exclusions
         common_root_exclusions = {'.git', '.vs', '.idea', '.vscode'}
         recommendations['root_exclusions'].update(common_root_exclusions)
         logger.debug(f"IDEandGitAutoExclude: Adding common root exclusions: {common_root_exclusions}")
 
-        # File exclusions
         common_file_exclusions = {
             '.gitignore', '.vsignore', '.dockerignore', '.gitattributes',
             'Thumbs.db', '.DS_Store', '*.swp', '*~',

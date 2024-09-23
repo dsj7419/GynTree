@@ -1,0 +1,113 @@
+QMainWindow, QWidget {
+    background-color: #f0f0f0;
+    color: #333333;
+}
+
+QPushButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 14px;
+    margin: 4px 2px;
+    border-radius: 4px;
+}
+
+QPushButton:hover {
+    background-color: #45a049;
+}
+
+QTreeWidget, QTableWidget {
+    background-color: white;
+    alternate-background-color: #f9f9f9;
+    border: 1px solid #ddd;
+}
+
+QHeaderView::section {
+    background-color: #e0e0e0;
+    padding: 4px;
+    border: 1px solid #ddd;
+}
+
+QLabel {
+    color: #333333;
+}
+
+QLineEdit {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+QGroupBox {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 1ex;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 3px 0 3px;
+}
+
+QStatusBar {
+    background-color: #e0e0e0;
+    color: #333333;
+}
+
+QScrollBar:vertical {
+    border: none;
+    background: #f0f0f0;
+    width: 10px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #c1c1c1;
+    min-height: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: #f0f0f0;
+    height: 10px;
+    margin: 0px 0px 0px 0px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #c1c1c1;
+    min-width: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+
+QMenu {
+    background-color: white;
+    border: 1px solid #ddd;
+}
+
+QMenu::item {
+    padding: 5px 20px 5px 20px;
+}
+
+QMenu::item:selected {
+    background-color: #e0e0e0;
+}
+
+QToolTip {
+    background-color: #f0f0f0;
+    color: #333333;
+    border: 1px solid #ccc;
+}

@@ -19,7 +19,8 @@ class ProjectTypeDetector:
         js_files = ['.js', '.ts', '.jsx', '.tsx']
         js_config_files = ['package.json', 'tsconfig.json', '.eslintrc.js', '.eslintrc.json']
         return any(
-            any(file.endswith(ext) for ext in js_files) or file in js_config_files
+            any(file.endswith(ext) for ext in js_files) or
+            file in js_config_files
             for file in os.listdir(self.start_directory)
         )
 

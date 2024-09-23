@@ -14,23 +14,18 @@ class AutoExcludeManager:
         self.settings_manager = settings_manager
         self.project_types = project_types
         self.exclusion_services: List[ExclusionService] = ExclusionServiceFactory.create_services(
-            project_types,
-            self.start_directory,
-            project_type_detector,
-            settings_manager
+            project_types, self.start_directory, project_type_detector, settings_manager
         )
         logger.debug(f"Created exclusion services: {[type(service).__name__ for service in self.exclusion_services]}")
         self.raw_recommendations: Dict[str, Set[str]] = {'root_exclusions': set(), 'excluded_dirs': set(), 'excluded_files': set()}
 
     def get_recommendations(self) -> Dict[str, Set[str]]:
         self.raw_recommendations = {'root_exclusions': set(), 'excluded_dirs': set(), 'excluded_files': set()}
-        
         for service in self.exclusion_services:
             service_exclusions = service.get_exclusions()
             for category in ['root_exclusions', 'excluded_dirs', 'excluded_files']:
                 self.raw_recommendations[category].update(service_exclusions.get(category, set()))
 
-        # Filter out already excluded items
         for category in ['root_exclusions', 'excluded_dirs', 'excluded_files']:
             self.raw_recommendations[category] = {
                 path for path in self.raw_recommendations[category]

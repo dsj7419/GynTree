@@ -1,37 +1,38 @@
 from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QPushButton, QFileDialog, QWidget,
                              QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QApplication,
                              QSplitter, QDesktopWidget)
-from PyQt5.QtGui import QIcon, QFont, QPalette, QColor
+from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtCore import Qt, QTimer
 import csv
 from utilities.resource_path import get_resource_path
+from utilities.theme_manager import ThemeManager
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ResultUI(QMainWindow):
-    def __init__(self, directory_analyzer):
+    def __init__(self, controller, theme_manager: ThemeManager, directory_analyzer):
         super().__init__()
+        self.controller = controller
+        self.theme_manager = theme_manager
         self.directory_analyzer = directory_analyzer
         self.result_data = None
         self.init_ui()
 
+        self.theme_manager.themeChanged.connect(self.apply_theme)
+
     def init_ui(self):
         self.setWindowTitle('Analysis Results')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo 64X64.ico')))
-        
-        palette = QPalette()
-        palette.setColor(QPalette.Window, QColor(240, 240, 240))
-        palette.setColor(QPalette.WindowText, QColor(50, 50, 50))
-        palette.setColor(QPalette.Button, QColor(220, 220, 220))
-        palette.setColor(QPalette.ButtonText, QColor(50, 50, 50))
-        self.setPalette(palette)
-        
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
 
         title = QLabel('Directory Analysis Results')
-        title.setFont(QFont('Arial', 18, QFont.Bold))
+        title.setFont(QFont('Arial', 24, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
         title.setMaximumHeight(40)
         layout.addWidget(title)
@@ -44,37 +45,20 @@ class ResultUI(QMainWindow):
         self.result_table.setWordWrap(True)
         self.result_table.setTextElideMode(Qt.ElideNone)
         self.result_table.setShowGrid(True)
-        self.result_table.setStyleSheet("""
-            QTableWidget {
-                border: 1px solid #d6d9dc;
-                gridline-color: #f0f0f0;
-            }
-            QTableWidget::item {
-                padding: 5px;
-                border-bottom: 1px solid #f0f0f0;
-            }
-            QHeaderView::section {
-                background-color: #f8f9fa;
-                padding: 5px;
-                border: 1px solid #d6d9dc;
-                font-weight: bold;
-            }
-        """)
-
         layout.addWidget(self.result_table)
 
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(10)
+        button_layout.setSpacing(15)
 
-        copy_button = QPushButton('Copy to Clipboard')
+        copy_button = self.create_styled_button('Copy to Clipboard')
         copy_button.clicked.connect(self.copy_to_clipboard)
         button_layout.addWidget(copy_button)
 
-        save_txt_button = QPushButton('Save as TXT')
+        save_txt_button = self.create_styled_button('Save as TXT')
         save_txt_button.clicked.connect(lambda: self.save_file('txt'))
         button_layout.addWidget(save_txt_button)
 
-        save_csv_button = QPushButton('Save as CSV')
+        save_csv_button = self.create_styled_button('Save as CSV')
         save_csv_button.clicked.connect(lambda: self.save_file('csv'))
         button_layout.addWidget(save_csv_button)
 
@@ -85,8 +69,17 @@ class ResultUI(QMainWindow):
         height = int(screen.height() * 0.8)
         self.setGeometry(int(screen.width() * 0.1), int(screen.height() * 0.1), width, height)
 
+        self.apply_theme()
+
+    def create_styled_button(self, text):
+        """Helper method to create styled buttons."""
+        btn = QPushButton(text)
+        btn.setFont(QFont('Arial', 14))
+        return btn
+
     def update_result(self):
-        self.result_data = self.directory_analyzer.get_flat_structure()
+        """Updates the result table with data from the directory analyzer."""
+        self.result_data = self.controller.project_controller.project_context.directory_analyzer.get_flat_structure()
         self.result_table.setRowCount(len(self.result_data))
         max_path_width = 0
         for row, item in enumerate(self.result_data):
@@ -98,18 +91,18 @@ class ResultUI(QMainWindow):
         padding = 50
         self.result_table.setColumnWidth(0, max_path_width + padding)
         self.result_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-
         self.result_table.resizeRowsToContents()
-
         QTimer.singleShot(0, self.adjust_column_widths)
 
     def adjust_column_widths(self):
+        """Adjust the widths of the result table columns to fit the available space."""
         total_width = self.result_table.viewport().width()
         path_column_width = self.result_table.columnWidth(0)
         description_column_width = total_width - path_column_width
         self.result_table.setColumnWidth(1, description_column_width)
 
     def copy_to_clipboard(self):
+        """Copy the result data to the system clipboard."""
         clipboard_text = "Path,Description\n"
         for row in range(self.result_table.rowCount()):
             row_data = [
@@ -120,6 +113,7 @@ class ResultUI(QMainWindow):
         QApplication.clipboard().setText(clipboard_text)
 
     def save_file(self, file_type):
+        """Save the result data to a file (TXT or CSV)."""
         options = QFileDialog.Options()
         if file_type == 'txt':
             file_name, _ = QFileDialog.getSaveFileName(self, "Save TXT", "", "Text Files (*.txt)", options=options)
@@ -145,3 +139,9 @@ class ResultUI(QMainWindow):
 
     def refresh_display(self):
         self.update_result()
+
+    def apply_theme(self):
+        self.theme_manager.apply_theme(self)
+
+    def closeEvent(self, event):
+        super().closeEvent(event)

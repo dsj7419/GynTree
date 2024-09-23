@@ -25,7 +25,8 @@ class SettingsManager:
         default_settings = {
             'root_exclusions': self.project.root_exclusions or [],
             'excluded_dirs': self.project.excluded_dirs or [],
-            'excluded_files': self.project.excluded_files or []
+            'excluded_files': self.project.excluded_files or [],
+            'theme_preference': 'light'
         }
 
         for key, value in default_settings.items():
@@ -33,6 +34,13 @@ class SettingsManager:
                 settings[key] = value
 
         return settings
+    
+    def get_theme_preference(self) -> str:
+        return self.settings.get('theme_preference', 'light')
+
+    def set_theme_preference(self, theme: str):
+        self.settings['theme_preference'] = theme
+        self.save_settings()
 
     def get_root_exclusions(self) -> List[str]:
         return [os.path.normpath(d) for d in self.settings.get('root_exclusions', [])]
@@ -51,13 +59,16 @@ class SettingsManager:
         }
 
     def update_settings(self, new_settings: Dict[str, List[str]]):
-        self.settings.update(new_settings)
+        for key, value in new_settings.items():
+            if key in self.settings:
+                self.settings[key] = value
         self.save_settings()
 
     def save_settings(self):
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         with open(self.config_path, 'w') as file:
             json.dump(self.settings, file, indent=4)
+        logger.debug(f"Settings saved to {self.config_path}")
 
     def is_excluded(self, path: str) -> bool:
         return (self.is_root_excluded(path) or
@@ -67,7 +78,6 @@ class SettingsManager:
     def is_root_excluded(self, path: str) -> bool:
         relative_path = self._get_relative_path(path)
         path_parts = relative_path.split(os.sep)
-        
         for excluded in self.get_root_exclusions():
             if '**' in excluded:
                 if fnmatch.fnmatch(relative_path, excluded):
