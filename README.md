@@ -33,7 +33,7 @@ We welcome contributions from the community! Whether it's bug reports, feature r
 
 ## 📜 License
 
-GynTree is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+GynTree is licensed under the Mozilla Public License, version 2.0. See the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgements
 
