@@ -1,163 +1,165 @@
-# GynTree Configuration Guide
+# 📚 GynTree API Reference
 
-This guide covers the various configuration options available in GynTree, allowing you to customize the tool to your specific needs.
+This API reference provides detailed information about the core components of the GynTree application. Each section describes the available modules, classes, and functions, with usage examples where appropriate.
 
-## Table of Contents
+---
 
-1. [General Settings](#general-settings)
-2. [Analysis Configuration](#analysis-configuration)
-3. [Exclusion Rules](#exclusion-rules)
-4. [Visualization Options](#visualization-options)
-5. [Performance Tuning](#performance-tuning)
-6. [Advanced Configuration](#advanced-configuration)
+## Modules Overview
 
-## General Settings
+### 1. **AppController**
 
-### Application Preferences
+Manages the core functionality of the GynTree application, orchestrating the workflow between different controllers.
 
-Location: `config/preferences.json`
+**start()**  
+Initializes the application and loads the initial UI.  
+**Returns**: `None`
 
-- `language`: Set the interface language (e.g., "en" for English)
-- `theme`: Choose between "light" and "dark" themes
-- `auto_save`: Enable/disable automatic saving of projects (true/false)
+**shutdown()**  
+Properly terminates the application and cleans up resources before exit.  
+**Returns**: `None`
 
-Example:
+**load_project(project_path: str)**  
+Loads a project configuration from the specified path.  
+**Arguments**:
 
-```json
-{
-  "language": "en",
-  "theme": "dark",
-  "auto_save": true
-}
-```
+- `project_path` _(str)_: The path to the project configuration file.  
+**Returns**: `None`
 
-## Analysis Configuration
+---
 
-### Scan Depth
+### 2. **ProjectController**
 
-Location: `config/analysis_settings.json`
+Handles loading, saving, and managing project configurations and data.
 
-- `max_depth`: Set the maximum directory depth for analysis (-1 for unlimited)
-- `follow_symlinks`: Choose whether to follow symbolic links (true/false)
+**create_project(project_name: str, directory: str)**  
+Creates a new project with the specified name and root directory.  
+**Arguments**:
 
-Example:
+- `project_name` _(str)_: The name of the project.
+- `directory` _(str)_: The root directory of the project.  
+**Returns**: `None`
 
-```json
-{
-  "max_depth": 10,
-  "follow_symlinks": false
-}
-```
+**save_project(project_path: str)**  
+Saves the current project configuration to the specified path.  
+**Arguments**:
 
-## Exclusion Rules
+- `project_path` _(str)_: The path to save the project configuration file.  
+**Returns**: `None`
 
-### Global Exclusions
+**delete_project(project_name: str)**  
+Deletes the project configuration from the system.  
+**Arguments**:
 
-Location: `config/global_exclusions.json`
+- `project_name` _(str)_: The name of the project to delete.  
+**Returns**: `None`
 
-Define patterns for files and directories to be excluded globally:
+---
 
-```json
-{
-  "directories": [
-    "node_modules",
-    ".git",
-    "__pycache__"
-  ],
-  "files": [
-    "*.pyc",
-    ".DS_Store"
-  ]
-}
-```
+### 3. **DirectoryAnalyzer**
 
-### Project-Specific Exclusions
+Responsible for scanning and analyzing directory structures to provide hierarchical or flat representations.
 
-These are managed through the GUI and stored in individual project files.
+**analyze(directory: str, exclude_patterns: List[str])**  
+Analyzes the specified directory while excluding files or directories matching the patterns.  
+**Arguments**:
 
-## Visualization Options
+- `directory` _(str)_: The path of the directory to analyze.
+- `exclude_patterns` _(List[str])_: A list of patterns to exclude during the analysis.  
+**Returns**: `Dict[str, Any]` _(Directory structure representation)_
 
-### Tree View Settings
+---
 
-Location: `config/visualization_settings.json`
+### 4. **CommentParser**
 
-- `default_expanded_levels`: Number of levels to expand by default
-- `node_spacing`: Adjust the spacing between tree nodes
+Extracts purpose comments from source code files that start with `GynTree:`.
 
-Example:
+**parse_file(file_path: str)**  
+Parses the file for comments starting with `GynTree:` to extract descriptions.  
+**Arguments**:
 
-```json
-{
-  "default_expanded_levels": 3,
-  "node_spacing": 20
-}
-```
+- `file_path` _(str)_: The path of the file to parse.  
+**Returns**: `List[str]` _(List of extracted comments)_
 
-## Performance Tuning
+**parse_directory(directory: str)**  
+Scans all files in a directory for comments starting with `GynTree:` and returns a summary.  
+**Arguments**:
 
-### Analysis Optimization
+- `directory` _(str)_: The directory path to scan.  
+**Returns**: `Dict[str, List[str]]` _(Mapping of filenames to extracted comments)_
 
-Location: `config/performance_settings.json`
+---
 
-- `chunk_size`: Adjust the number of items processed in each batch
-- `use_multiprocessing`: Enable/disable multiprocessing for large directories
+### 5. **ThemeManager**
 
-Example:
+Handles the application's light and dark theming.
 
-```json
-{
-  "chunk_size": 1000,
-  "use_multiprocessing": true
-}
-```
+**set_theme(theme: str)**  
+Switches between light and dark themes.  
+**Arguments**:
 
-## Advanced Configuration
+- `theme` _(str)_: Must be either `"light"` or `"dark"`.  
+**Returns**: `None`
 
-### Custom Exclusion Services
+**apply_theme(window: QWidget)**  
+Applies the current theme to the specified window or UI element.  
+**Arguments**:
 
-To add support for new file types or specialized exclusion rules:
+- `window` _(QWidget)_: The UI window or component to apply the theme to.  
+**Returns**: `None`
 
-1. Create a new Python file in `src/services/auto_exclude/`
-2. Implement a class that inherits from `ExclusionService`
-3. Add the new service to `ExclusionServiceFactory` in `src/services/ExclusionServiceFactory.py`
+---
 
-Example:
+### 6. **ExclusionManager**
 
-```python
-from services.ExclusionService import ExclusionService
+Allows users to define files or directories to exclude from the analysis.
 
-class CustomExclusionService(ExclusionService):
-    def get_exclusions(self):
-        # Implement custom exclusion logic here
-        pass
+**add_exclusion(pattern: str)**  
+Adds a file or directory pattern to the exclusion list.  
+**Arguments**:
 
-# Add to ExclusionServiceFactory
-service_map['custom'] = CustomExclusionService
-```
+- `pattern` _(str)_: The pattern (e.g., `*.log`, `__pycache__`) to exclude from the analysis.  
+**Returns**: `None`
 
-### Logging Configuration
+**remove_exclusion(pattern: str)**  
+Removes a file or directory pattern from the exclusion list.  
+**Arguments**:
 
-Location: `config/logging_config.json`
+- `pattern` _(str)_: The pattern to remove from the exclusion list.  
+**Returns**: `None`
 
-Adjust logging levels and output formats:
+**get_exclusions()**  
+Retrieves the list of current exclusions.  
+**Returns**: `List[str]` _(List of exclusion patterns)_
 
-```json
-{
-  "version": 1,
-  "disable_existing_loggers": false,
-  "handlers": {
-    "file": {
-      "class": "logging.FileHandler",
-      "filename": "gyntree.log",
-      "level": "DEBUG",
-      "formatter": "detailed"
-    }
-  },
-  "root": {
-    "level": "INFO",
-    "handlers": ["file"]
-  }
-}
-```
+---
 
-For more information on using these configurations, refer to the [User Guide](user_guide.md). If you encounter any issues, check our [FAQ](faq.md) or [open an issue](https://github.com/dsj7419/GynTree/issues) on GitHub.
+### 7. **AutoExcludeManager**
+
+Automatically suggests files and directories to exclude based on the project type.
+
+**suggest_exclusions(project_type: str)**  
+Suggests common exclusions for a specific project type (e.g., Python, Node.js).  
+**Arguments**:
+
+- `project_type` _(str)_: The type of project (e.g., `"python"`, `"nodejs"`).  
+**Returns**: `List[str]` _(List of suggested exclusions)_
+
+---
+
+## Error Handling
+
+Most GynTree components will raise exceptions if they encounter critical issues, such as:
+
+- **`FileNotFoundError`**: Raised when trying to access a non-existent file or directory.
+- **`ValueError`**: Raised when invalid arguments are passed to a method.
+- **`PermissionError`**: Raised if the application lacks permissions to access a file or directory.
+
+---
+
+## Future API Extensions
+
+This API reference will be expanded as more functionality is added to GynTree, including:
+
+- **Directory comparison**: Compare two directory structures and highlight differences.
+- **Plugin system**: Allow developers to extend the functionality of GynTree with custom plugins.
+- **Cloud integration**: Support for analyzing cloud directories such as Dropbox or Google Drive.
