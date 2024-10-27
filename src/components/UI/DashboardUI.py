@@ -34,7 +34,7 @@ class DashboardUI(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle('GynTree Dashboard')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+        self.setWindowIcon(QIcon(get_resource_path('../assets/images/GynTree_logo.ico')))
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -43,7 +43,7 @@ class DashboardUI(QMainWindow):
         main_layout.setSpacing(20)
 
         logo_label = QLabel()
-        logo_path = get_resource_path('assets/images/gyntree_logo.png')
+        logo_path = get_resource_path('../assets/images/gyntree_logo.png')
         if os.path.exists(logo_path):
             logo_pixmap = QPixmap(logo_path)
             logo_label.setPixmap(logo_pixmap.scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation))

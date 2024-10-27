@@ -20,7 +20,7 @@ class ExclusionsManagerUI(QWidget):
         self.root_tree = None
 
         self.setWindowTitle('Exclusions Manager')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+        self.setWindowIcon(QIcon(get_resource_path('../assets/images/GynTree_logo.ico')))
 
         self.init_ui()
         self.theme_manager.themeChanged.connect(self.apply_theme)

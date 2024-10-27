@@ -23,7 +23,7 @@ class ProjectUI(QWidget):
 
     def init_ui(self):
         self.setWindowTitle('Project Manager')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+        self.setWindowIcon(QIcon(get_resource_path('../assets/images/GynTree_logo.ico')))
 
         layout = QVBoxLayout()
         layout.setContentsMargins(30, 30, 30, 30)
