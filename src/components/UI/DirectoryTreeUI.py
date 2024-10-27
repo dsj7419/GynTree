@@ -15,8 +15,8 @@ class DirectoryTreeUI(QWidget):
         self.controller = controller
         self.theme_manager = theme_manager
         self.directory_structure = None
-        self.folder_icon = QIcon(get_resource_path("assets/images/folder_icon.png"))
-        self.file_icon = QIcon(get_resource_path("assets/images/file_icon.png"))
+        self.folder_icon = QIcon(get_resource_path("../assets/images/folder_icon.png"))
+        self.file_icon = QIcon(get_resource_path("../assets/images/file_icon.png"))
         self.tree_widget = None
         self.tree_exporter = None
         self.init_ui()

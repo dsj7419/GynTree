@@ -23,7 +23,7 @@ class ResultUI(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle('Analysis Results')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+        self.setWindowIcon(QIcon(get_resource_path('../assets/images/GynTree_logo.ico')))
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)

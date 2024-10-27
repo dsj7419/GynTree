@@ -18,11 +18,11 @@ class AutoExcludeUI(QMainWindow):
         self.project_context = project_context
         self.theme_manager = ThemeManager.getInstance()
 
-        self.folder_icon = QIcon(get_resource_path("assets/images/folder_icon.png"))
-        self.file_icon = QIcon(get_resource_path("assets/images/file_icon.png"))
+        self.folder_icon = QIcon(get_resource_path("../assets/images/folder_icon.png"))
+        self.file_icon = QIcon(get_resource_path("../assets/images/file_icon.png"))
 
         self.setWindowTitle('Auto-Exclude Recommendations')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+        self.setWindowIcon(QIcon(get_resource_path('../assets/images/GynTree_logo.ico')))
 
         self.init_ui()
         
