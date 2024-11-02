@@ -1,7 +1,9 @@
 {
   "last_config": {
     "debug": false,
-    "html_report": false,
-    "coverage": false
+    "timeout": 300,
+    "last_run_type": "Run Single Test",
+    "last_run_time": "2024-11-02T15:07:43.626378",
+    "last_run_success": true
   }
 }

@@ -111,3 +111,23 @@ QToolTip {
     color: #333333;
     border: 1px solid #ccc;
 }
+
+QPushButton.critical {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+
+QPushButton.critical:hover {
+    background-color: #c82333;
+}
+
+QPushButton.critical:pressed {
+    background-color: #bd2130;
+}
+
+QPushButton.critical:disabled {
+    background-color: #dc354580;
+}

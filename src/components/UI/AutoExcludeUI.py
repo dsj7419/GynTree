@@ -10,23 +10,26 @@ import logging
 logger = logging.getLogger(__name__)
 
 class AutoExcludeUI(QMainWindow):
-    def __init__(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context):
+    def __init__(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context, theme_manager=None, apply_initial_theme=True):
         super().__init__()
         self.auto_exclude_manager = auto_exclude_manager
         self.settings_manager = settings_manager
         self.formatted_recommendations = formatted_recommendations
         self.project_context = project_context
-        self.theme_manager = ThemeManager.getInstance()
+        self.theme_manager = theme_manager or ThemeManager.getInstance()
 
-        self.folder_icon = QIcon(get_resource_path("../assets/images/folder_icon.png"))
-        self.file_icon = QIcon(get_resource_path("../assets/images/file_icon.png"))
+        self.folder_icon = QIcon(get_resource_path("assets/images/folder_icon.png"))
+        self.file_icon = QIcon(get_resource_path("assets/images/file_icon.png"))
 
         self.setWindowTitle('Auto-Exclude Recommendations')
-        self.setWindowIcon(QIcon(get_resource_path('../assets/images/GynTree_logo.ico')))
+        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
 
         self.init_ui()
         
         self.theme_manager.themeChanged.connect(self.apply_theme)
+
+        if apply_initial_theme:
+            self.apply_theme()
 
     def init_ui(self):
         central_widget = QWidget()
@@ -40,6 +43,8 @@ class AutoExcludeUI(QMainWindow):
 
         collapse_btn = QPushButton('Collapse All')
         expand_btn = QPushButton('Expand All')
+        collapse_btn.setObjectName("collapse_btn")
+        expand_btn.setObjectName("expand_btn")
         header_layout.addWidget(collapse_btn)
         header_layout.addWidget(expand_btn)
         main_layout.addLayout(header_layout)
@@ -59,6 +64,7 @@ class AutoExcludeUI(QMainWindow):
         expand_btn.clicked.connect(self.tree_widget.expandAll)
 
         apply_button = QPushButton('Apply Exclusions')
+        apply_button.setObjectName("apply_button") 
         apply_button.clicked.connect(self.apply_exclusions)
         main_layout.addWidget(apply_button, alignment=Qt.AlignCenter)
 
@@ -105,9 +111,12 @@ class AutoExcludeUI(QMainWindow):
         return combined_exclusions
 
     def apply_exclusions(self):
-        self.auto_exclude_manager.apply_recommendations()
-        QMessageBox.information(self, "Exclusions Updated", "Exclusions have been successfully updated.")
-        self.close()
+        try:
+            self.auto_exclude_manager.apply_recommendations()
+            QMessageBox.information(self, "Exclusions Updated", "Exclusions have been successfully updated.")
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to apply exclusions: {str(e)}")
 
     def update_recommendations(self, formatted_recommendations):
         self.formatted_recommendations = formatted_recommendations

@@ -20,7 +20,7 @@ class IDEandGitAutoExclude(ExclusionService):
 
         common_file_exclusions = {
             '.gitignore', '.vsignore', '.dockerignore', '.gitattributes',
-            'Thumbs.db', '.DS_Store', '*.swp', '*~',
+            'Thumbs.db', '.DS_Store', '*.swp', '*~', '*.tmp',
             '.editorconfig'
         }
         recommendations['excluded_files'].update(common_file_exclusions)
