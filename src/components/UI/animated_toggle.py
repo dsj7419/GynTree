@@ -45,7 +45,7 @@ class AnimatedToggle(QCheckBox):
         self.pulse_anim.setStartValue(10)
         self.pulse_anim.setEndValue(20)
 
-        self.animations_group = QSequentialAnimationGroup()
+        self.animations_group = QSequentialAnimationGroup(self)
         self.animations_group.addAnimation(self.animation)
         self.animations_group.addAnimation(self.pulse_anim)
 

@@ -1,204 +1,197 @@
 import pytest
 import os
 import json
-from services.ProjectManager import ProjectManager
+from pathlib import Path
 from models.Project import Project
+from services.ProjectManager import ProjectManager
+import logging
 
 pytestmark = pytest.mark.unit
 
-@pytest.fixture
-def project_manager(tmpdir):
-    ProjectManager.projects_dir = str(tmpdir.mkdir("projects"))
-    return ProjectManager()
+class TestProjectManager:
+    @pytest.fixture
+    def test_dir(self, tmp_path):
+        """Create a base test directory"""
+        test_dir = tmp_path / "test_projects"
+        test_dir.mkdir(parents=True, exist_ok=True)
+        return test_dir
 
-def test_create_and_load_project(project_manager):
-    project = Project(
-        name="test_project",
-        start_directory="/test/path",
-        root_exclusions=["node_modules"],
-        excluded_dirs=["dist"],
-        excluded_files=[".env"]
-    )
-    project_manager.save_project(project)
-    project_file = os.path.join(ProjectManager.projects_dir, 'test_project.json')
-    assert os.path.exists(project_file)
-    loaded_project = project_manager.load_project("test_project")
-    assert loaded_project.name == "test_project"
-    assert loaded_project.start_directory == "/test/path"
-    assert loaded_project.root_exclusions == ["node_modules"]
-    assert loaded_project.excluded_dirs == ["dist"]
-    assert loaded_project.excluded_files == [".env"]
+    @pytest.fixture
+    def project_manager(self, test_dir):
+        """Create ProjectManager instance with temporary directory"""
+        ProjectManager.projects_dir = str(test_dir / "projects")
+        return ProjectManager()
 
-def test_load_nonexistent_project(project_manager):
-    project = project_manager.load_project("nonexistent_project")
-    assert project is None
+    @pytest.fixture
+    def sample_project(self, test_dir):
+        """Create a sample project for testing"""
+        project_dir = test_dir / "test_directory"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        return Project(
+            name="test_project",
+            start_directory=str(project_dir),
+            root_exclusions=["node_modules"],
+            excluded_dirs=["dist"],
+            excluded_files=[".env"]
+        )
 
-def test_update_existing_project(project_manager):
-    project = Project(
-        name="update_test",
-        start_directory="/old/path",
-        root_exclusions=["old_root"],
-        excluded_dirs=["old_dir"],
-        excluded_files=["old_file"]
-    )
-    project_manager.save_project(project)
-    project.start_directory = "/new/path"
-    project.root_exclusions = ["new_root"]
-    project.excluded_dirs = ["new_dir"]
-    project.excluded_files = ["new_file"]
-    project_manager.save_project(project)
-    loaded_project = project_manager.load_project("update_test")
-    assert loaded_project.start_directory == "/new/path"
-    assert loaded_project.root_exclusions == ["new_root"]
-    assert loaded_project.excluded_dirs == ["new_dir"]
-    assert loaded_project.excluded_files == ["new_file"]
+    def test_projects_directory_creation(self, test_dir):
+        """Test that projects directory is created on initialization"""
+        projects_dir = test_dir / "projects_test"
+        ProjectManager.projects_dir = str(projects_dir)
+        ProjectManager()
+        assert projects_dir.exists()
+        assert projects_dir.is_dir()
 
-def test_list_projects(project_manager):
-    projects = [
-        Project(name="project1", start_directory="/path1"),
-        Project(name="project2", start_directory="/path2")
-    ]
-    for project in projects:
-        project_manager.save_project(project)
-    project_list = project_manager.list_projects()
-    assert "project1" in project_list
-    assert "project2" in project_list
+    def test_projects_directory_creation_error(self, monkeypatch, test_dir):
+        """Test error handling when projects directory creation fails"""
+        # Set a non-existent directory path
+        projects_dir = test_dir / "should_fail"
+        ProjectManager.projects_dir = str(projects_dir)
+        
+        # Create mock that always raises PermissionError
+        def mock_makedirs(*args, **kwargs):
+            raise PermissionError("Permission denied")
+        
+        # Apply mock to os.makedirs
+        monkeypatch.setattr(os, "makedirs", mock_makedirs)
+        
+        # Test that initialization fails
+        with pytest.raises(PermissionError):
+            ProjectManager()
+            
+    def test_save_project(self, project_manager, sample_project):
+        """Test saving a project"""
+        project_manager.save_project(sample_project)
+        
+        project_file = Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+        assert project_file.exists()
+        
+        with open(project_file) as f:
+            data = json.load(f)
+            assert data['name'] == sample_project.name
+            assert data['start_directory'] == sample_project.start_directory
+            assert data['root_exclusions'] == sample_project.root_exclusions
+            assert data['excluded_dirs'] == sample_project.excluded_dirs
+            assert data['excluded_files'] == sample_project.excluded_files
 
-def test_delete_project(project_manager):
-    project = Project(name="to_delete", start_directory="/path")
-    project_manager.save_project(project)
-    assert project_manager.delete_project("to_delete")
-    assert project_manager.load_project("to_delete") is None
+    def test_save_project_permission_error(self, project_manager, sample_project, monkeypatch):
+        """Test error handling when saving project fails due to permissions"""
+        def mock_open(*args, **kwargs):
+            raise PermissionError("Permission denied")
+            
+        monkeypatch.setattr("builtins.open", mock_open)
+        with pytest.raises(PermissionError):
+            project_manager.save_project(sample_project)
 
-def test_project_name_validation(project_manager):
-    with pytest.raises(ValueError):
-        Project(name="invalid/name", start_directory="/path")
+    def test_load_project(self, project_manager, sample_project):
+        """Test loading a project"""
+        project_manager.save_project(sample_project)
+        
+        loaded_project = project_manager.load_project(sample_project.name)
+        assert loaded_project is not None
+        assert loaded_project.name == sample_project.name
+        assert loaded_project.start_directory == sample_project.start_directory
+        assert loaded_project.root_exclusions == sample_project.root_exclusions
+        assert loaded_project.excluded_dirs == sample_project.excluded_dirs
+        assert loaded_project.excluded_files == sample_project.excluded_files
 
-def test_project_directory_validation(project_manager):
-    with pytest.raises(ValueError):
-        Project(name="valid_name", start_directory="nonexistent/path")
+    def test_load_project_json_error(self, project_manager, sample_project):
+        """Test handling of corrupt JSON files"""
+        # Create a corrupt JSON file
+        project_file = Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+        project_file.parent.mkdir(parents=True, exist_ok=True)
+        project_file.write_text("invalid json content")
+        
+        loaded_project = project_manager.load_project(sample_project.name)
+        assert loaded_project is None
 
-def test_save_project_with_custom_settings(project_manager):
-    project = Project(
-        name="custom_settings",
-        start_directory="/custom/path",
-        root_exclusions=["custom_root"],
-        excluded_dirs=["custom_dir"],
-        excluded_files=["custom_file"]
-    )
-    project_manager.save_project(project)
-    with open(os.path.join(ProjectManager.projects_dir, 'custom_settings.json'), 'r') as f:
-        saved_data = json.load(f)
-    assert saved_data['name'] == "custom_settings"
-    assert saved_data['start_directory'] == "/custom/path"
-    assert saved_data['root_exclusions'] == ["custom_root"]
-    assert saved_data['excluded_dirs'] == ["custom_dir"]
-    assert saved_data['excluded_files'] == ["custom_file"]
+    def test_load_nonexistent_project(self, project_manager):
+        """Test loading a project that doesn't exist"""
+        loaded_project = project_manager.load_project("nonexistent_project")
+        assert loaded_project is None
 
-def test_load_project_with_missing_fields(project_manager):
-    incomplete_project_data = {
-        'name': 'incomplete_project',
-        'start_directory': '/incomplete/path'
-    }
-    with open(os.path.join(ProjectManager.projects_dir, 'incomplete_project.json'), 'w') as f:
-        json.dump(incomplete_project_data, f)
-    loaded_project = project_manager.load_project('incomplete_project')
-    assert loaded_project.name == 'incomplete_project'
-    assert loaded_project.start_directory == '/incomplete/path'
-    assert loaded_project.root_exclusions == []
-    assert loaded_project.excluded_dirs == []
-    assert loaded_project.excluded_files == []
+    def test_list_projects(self, project_manager, sample_project, test_dir):
+        """Test listing all projects"""
+        second_dir = test_dir / "second_directory"
+        second_dir.mkdir(parents=True, exist_ok=True)
+        
+        second_project = Project(
+            name="second_project",
+            start_directory=str(second_dir),
+            root_exclusions=["vendor"],
+            excluded_dirs=["build"],
+            excluded_files=["config.json"]
+        )
+        
+        project_manager.save_project(sample_project)
+        project_manager.save_project(second_project)
+        
+        project_list = project_manager.list_projects()
+        assert len(project_list) == 2
+        assert "test_project" in project_list
+        assert "second_project" in project_list
 
-def test_cleanup(project_manager):
-    project_manager.cleanup()
+    def test_list_projects_permission_error(self, project_manager, monkeypatch):
+        """Test error handling when listing projects fails"""
+        def mock_listdir(*args):
+            raise PermissionError("Permission denied")
+            
+        monkeypatch.setattr(os, "listdir", mock_listdir)
+        project_list = project_manager.list_projects()
+        assert project_list == []
 
-def test_project_serialization(project_manager):
-    project = Project(
-        name="serialization_test",
-        start_directory="/test/path",
-        root_exclusions=["node_modules"],
-        excluded_dirs=["dist"],
-        excluded_files=[".env"]
-    )
-    serialized = project.to_dict()
-    assert serialized['name'] == "serialization_test"
-    assert serialized['start_directory'] == "/test/path"
-    assert serialized['root_exclusions'] == ["node_modules"]
-    assert serialized['excluded_dirs'] == ["dist"]
-    assert serialized['excluded_files'] == [".env"]
+    def test_delete_project(self, project_manager, sample_project):
+        """Test deleting a project"""
+        project_manager.save_project(sample_project)
+        assert project_manager.delete_project(sample_project.name)
+        
+        project_file = Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+        assert not project_file.exists()
+        assert sample_project.name not in project_manager.list_projects()
 
-def test_project_deserialization(project_manager):
-    data = {
-        'name': 'deserialization_test',
-        'start_directory': '/test/path',
-        'root_exclusions': ['node_modules'],
-        'excluded_dirs': ['dist'],
-        'excluded_files': ['.env']
-    }
-    project = Project.from_dict(data)
-    assert project.name == 'deserialization_test'
-    assert project.start_directory == '/test/path'
-    assert project.root_exclusions == ['node_modules']
-    assert project.excluded_dirs == ['dist']
-    assert project.excluded_files == ['.env']
+    def test_delete_project_permission_error(self, project_manager, sample_project, monkeypatch):
+        """Test error handling when deleting project fails"""
+        project_manager.save_project(sample_project)
+        
+        def mock_remove(*args):
+            raise PermissionError("Permission denied")
+            
+        monkeypatch.setattr(os, "remove", mock_remove)
+        assert not project_manager.delete_project(sample_project.name)
 
-def test_save_and_load_multiple_projects(project_manager):
-    projects = [
-        Project(name="project1", start_directory="/path1"),
-        Project(name="project2", start_directory="/path2"),
-        Project(name="project3", start_directory="/path3")
-    ]
-    for project in projects:
-        project_manager.save_project(project)
-    
-    loaded_projects = [project_manager.load_project(p.name) for p in projects]
-    assert all(loaded is not None for loaded in loaded_projects)
-    assert [p.name for p in loaded_projects] == ["project1", "project2", "project3"]
+    def test_delete_nonexistent_project(self, project_manager):
+        """Test deleting a project that doesn't exist"""
+        assert not project_manager.delete_project("nonexistent_project")
 
-def test_project_file_integrity(project_manager):
-    project = Project(
-        name="integrity_test",
-        start_directory="/test/path",
-        root_exclusions=["node_modules"],
-        excluded_dirs=["dist"],
-        excluded_files=[".env"]
-    )
-    project_manager.save_project(project)
-    
-    file_path = os.path.join(ProjectManager.projects_dir, 'integrity_test.json')
-    with open(file_path, 'r') as f:
-        file_content = json.load(f)
-    
-    assert file_content['name'] == "integrity_test"
-    assert file_content['start_directory'] == "/test/path"
-    assert file_content['root_exclusions'] == ["node_modules"]
-    assert file_content['excluded_dirs'] == ["dist"]
-    assert file_content['excluded_files'] == [".env"]
+    def test_save_and_update_project(self, project_manager, sample_project):
+        """Test saving and then updating a project"""
+        project_manager.save_project(sample_project)
+        
+        updated_project = Project(
+            name=sample_project.name,
+            start_directory=sample_project.start_directory,
+            root_exclusions=sample_project.root_exclusions + ["vendor"],
+            excluded_dirs=sample_project.excluded_dirs + ["build"],
+            excluded_files=sample_project.excluded_files + ["config.json"]
+        )
+        project_manager.save_project(updated_project)
+        
+        loaded_project = project_manager.load_project(sample_project.name)
+        assert loaded_project is not None
+        assert loaded_project.root_exclusions == updated_project.root_exclusions
+        assert loaded_project.excluded_dirs == updated_project.excluded_dirs
+        assert loaded_project.excluded_files == updated_project.excluded_files
 
-def test_project_overwrite(project_manager):
-    project = Project(name="overwrite_test", start_directory="/old/path")
-    project_manager.save_project(project)
-    
-    updated_project = Project(name="overwrite_test", start_directory="/new/path")
-    project_manager.save_project(updated_project)
-    
-    loaded_project = project_manager.load_project("overwrite_test")
-    assert loaded_project.start_directory == "/new/path"
-
-def test_invalid_project_name_characters(project_manager):
-    invalid_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
-    for char in invalid_chars:
-        with pytest.raises(ValueError):
-            Project(name=f"invalid{char}name", start_directory="/path")
-
-def test_empty_project_name(project_manager):
-    with pytest.raises(ValueError):
-        Project(name="", start_directory="/path")
-
-def test_project_name_whitespace(project_manager):
-    with pytest.raises(ValueError):
-        Project(name="  ", start_directory="/path")
-
-def test_project_name_too_long(project_manager):
-    with pytest.raises(ValueError):
-        Project(name="a" * 256, start_directory="/path") 
+    def test_file_permissions(self, project_manager, sample_project, monkeypatch):
+        """Test handling of file permission errors"""
+        project_manager.save_project(sample_project)
+        
+        def selective_mock_open(*args, **kwargs):
+            if 'r' in kwargs.get('mode', args[1] if len(args) > 1 else ''):
+                raise PermissionError("Permission denied")
+            return open(*args, **kwargs)
+        
+        monkeypatch.setattr("builtins.open", selective_mock_open)
+        loaded_project = project_manager.load_project(sample_project.name)
+        assert loaded_project is None

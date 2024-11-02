@@ -1,5 +1,6 @@
 import logging
 import traceback
+from pathlib import Path
 from models.Project import Project
 from services.SettingsManager import SettingsManager
 from services.DirectoryAnalyzer import DirectoryAnalyzer
@@ -11,7 +12,11 @@ from utilities.error_handler import handle_exception
 logger = logging.getLogger(__name__)
 
 class ProjectContext:
+    VALID_THEMES = {'light', 'dark'}
+
     def __init__(self, project: Project):
+        if not isinstance(project, Project):
+            raise TypeError("Expected Project instance")
         self.project = project
         self.settings_manager = None
         self.directory_analyzer = None
@@ -22,13 +27,20 @@ class ProjectContext:
         self.project_type_detector = None
         self._is_active = False
 
-    @handle_exception
     def initialize(self):
         """Initialize project context and resources"""
         try:
             if self._is_active:
                 logger.warning("Attempting to initialize already active project context")
-                return
+                return False
+
+            if not self.project.start_directory:
+                raise ValueError("Project start directory not specified")
+
+            if not Path(self.project.start_directory).exists():
+                self._is_active = False
+                self.settings_manager = None
+                raise ValueError("Project directory does not exist")
 
             logger.debug(f"Initializing project context for {self.project.name}")
             self.settings_manager = SettingsManager(self.project)
@@ -39,17 +51,20 @@ class ProjectContext:
             self.initialize_auto_exclude_manager()
             self.initialize_directory_analyzer()
             
-            self.settings_manager.save_settings()
             self._is_active = True
+            self.settings_manager.save_settings()
             
             logger.debug(f"Project context initialized successfully for {self.project.name}")
+            return True
         except Exception as e:
             logger.error(f"Failed to initialize ProjectContext: {str(e)}")
-            self._is_active = False
+            self.close()
             raise
 
     def detect_project_types(self):
         """Detect and set project types"""
+        if not self.project_type_detector:
+            raise RuntimeError("ProjectTypeDetector not initialized")
         self.detected_types = self.project_type_detector.detect_project_types()
         self.project_types = {
             ptype for ptype, detected in self.detected_types.items() if detected
@@ -58,11 +73,17 @@ class ProjectContext:
 
     def initialize_root_exclusions(self):
         """Initialize and update root exclusions"""
+        if not self.settings_manager:
+            raise RuntimeError("SettingsManager not initialized")
+            
         default_root_exclusions = self.root_exclusion_manager.get_root_exclusions(
             self.detected_types,
             self.project.start_directory
         )
+        
         current_root_exclusions = set(self.settings_manager.get_root_exclusions())
+        if not current_root_exclusions:
+            current_root_exclusions = set(self.project.root_exclusions)
         
         updated_root_exclusions = self.root_exclusion_manager.merge_with_existing_exclusions(
             current_root_exclusions,
@@ -76,25 +97,41 @@ class ProjectContext:
     def initialize_auto_exclude_manager(self):
         """Initialize auto-exclude manager"""
         try:
-            if not self.auto_exclude_manager:
-                self.auto_exclude_manager = AutoExcludeManager(
-                    self.project.start_directory,
-                    self.settings_manager,
-                    self.project_types,
-                    self.project_type_detector
-                )
-                logger.debug("Initialized AutoExcludeManager")
+            if not self.settings_manager:
+                raise RuntimeError("SettingsManager not initialized")
+                
+            self.auto_exclude_manager = AutoExcludeManager(
+                self.project.start_directory,
+                self.settings_manager,
+                self.project_types,
+                self.project_type_detector
+            )
+            logger.debug("Initialized AutoExcludeManager")
         except Exception as e:
             logger.error(f"Failed to initialize AutoExcludeManager: {str(e)}")
             self.auto_exclude_manager = None
+            raise
 
     def initialize_directory_analyzer(self):
         """Initialize directory analyzer"""
-        self.directory_analyzer = DirectoryAnalyzer(
-            self.project.start_directory,
-            self.settings_manager
-        )
-        logger.debug("Initialized DirectoryAnalyzer")
+        try:
+            if not self.settings_manager:
+                raise RuntimeError("SettingsManager not initialized")
+                
+            if not Path(self.project.start_directory).exists():
+                self._is_active = False
+                self.settings_manager = None
+                raise ValueError("Project directory does not exist")
+                
+            self.directory_analyzer = DirectoryAnalyzer(
+                self.project.start_directory,
+                self.settings_manager
+            )
+            logger.debug("Initialized DirectoryAnalyzer")
+        except Exception as e:
+            self._is_active = False
+            self.settings_manager = None
+            raise
 
     @handle_exception
     def stop_analysis(self):
@@ -104,32 +141,46 @@ class ProjectContext:
 
     def reinitialize_directory_analyzer(self):
         """Reinitialize directory analyzer"""
-        self.initialize_directory_analyzer()
+        try:
+            self.initialize_directory_analyzer()
+        except ValueError as e:
+            self._is_active = False
+            self.settings_manager = None
+            self.directory_analyzer = None
+            raise
 
     @handle_exception
     def trigger_auto_exclude(self) -> str:
         """Trigger auto-exclude analysis"""
-        if not self.auto_exclude_manager:
-            logger.warning("AutoExcludeManager not initialized. Attempting to reinitialize.")
-            self.initialize_auto_exclude_manager()
-            
-        if not self.auto_exclude_manager:
-            logger.error("Failed to initialize AutoExcludeManager. Cannot perform auto-exclude.")
-            return "Auto-exclude manager initialization failed."
+        if not self._is_active:
+            return "Project context not initialized"
             
         if not self.settings_manager:
             logger.error("SettingsManager not initialized. Cannot perform auto-exclude.")
-            return "Settings manager missing."
+            return "Project context not initialized"
+            
+        if not self.auto_exclude_manager:
+            logger.warning("AutoExcludeManager not initialized. Attempting to reinitialize.")
+            try:
+                self.initialize_auto_exclude_manager()
+            except Exception:
+                return "Auto-exclude manager initialization failed"
             
         try:
-            new_recommendations = self.auto_exclude_manager.get_recommendations()
+            self.auto_exclude_manager.get_recommendations()
             return self.auto_exclude_manager.get_formatted_recommendations()
         except Exception as e:
             logger.error(f"Failed to trigger auto-exclude: {str(e)}")
-            return "Error in auto-exclude process."
+            return f"Error in auto-exclude process: {str(e)}"
 
     def get_directory_tree(self):
         """Get directory tree structure"""
+        if not self.directory_analyzer:
+            raise RuntimeError("DirectoryAnalyzer not initialized")
+        if not self.settings_manager:
+            raise RuntimeError("SettingsManager not initialized")
+            
+        self.settings_manager.excluded_dirs = []
         return self.directory_analyzer.analyze_directory()
 
     def save_settings(self):
@@ -139,18 +190,30 @@ class ProjectContext:
 
     def get_theme_preference(self) -> str:
         """Get theme preference"""
-        return self.settings_manager.get_theme_preference() if self.settings_manager else 'light'
+        if not self.settings_manager:
+            return 'light'
+        try:
+            return self.settings_manager.get_theme_preference()
+        except:
+            return 'light' 
 
     def set_theme_preference(self, theme: str):
         """Set theme preference"""
-        if self.settings_manager:
-            self.settings_manager.set_theme_preference(theme)
-            self.save_settings()
+        if theme not in self.VALID_THEMES:
+            raise ValueError(f"Invalid theme. Must be one of: {', '.join(self.VALID_THEMES)}")
+            
+        if not self.settings_manager:
+            raise RuntimeError("SettingsManager not initialized")
+            
+        self.settings_manager.set_theme_preference(theme)
+        self.save_settings()
 
     @property
     def is_initialized(self) -> bool:
         """Check if context is properly initialized"""
-        return self._is_active and self.settings_manager is not None and self.directory_analyzer is not None
+        return (self._is_active and 
+                self.settings_manager is not None and 
+                self.directory_analyzer is not None)
 
     @handle_exception
     def close(self):
@@ -163,9 +226,9 @@ class ProjectContext:
                 self.settings_manager.save_settings()
                 self.settings_manager = None
                 
+            self.directory_analyzer = None  # Moved before stop() call to ensure cleanup
             if self.directory_analyzer:
                 self.directory_analyzer.stop()
-                self.directory_analyzer = None
                 
             if self.auto_exclude_manager:
                 self.auto_exclude_manager = None
@@ -182,4 +245,7 @@ class ProjectContext:
 
     def __del__(self):
         """Destructor to ensure cleanup"""
-        self.close()
+        try:
+            self.close()
+        except:
+            pass

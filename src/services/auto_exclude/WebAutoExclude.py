@@ -16,7 +16,8 @@ class WebAutoExclude(ExclusionService):
 
         if self.project_type_detector.detect_web_project() or self.project_type_detector.detect_nextjs_project():
             recommendations['root_exclusions'].update(['.cache', '.tmp', 'dist', 'build'])
-            logger.debug("WebAutoExclude: Adding web-related excluded_dirs to root exclusions")
+            recommendations['excluded_dirs'].add('public')
+            logger.debug("WebAutoExclude: Adding web-related excluded_dirs")
 
         for root, dirs, files in self.walk_directory():
             if 'public' in dirs:

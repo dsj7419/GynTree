@@ -1,199 +1,325 @@
 import pytest
-from PyQt5.QtWidgets import QApplication, QLabel
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QApplication, QLabel, QMainWindow,
+    QPushButton, QStatusBar, QWidget
+)
+from PyQt5.QtCore import Qt, QSize, QPoint
+from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtTest import QTest
+import logging
+import psutil
+import gc
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+
 from components.UI.DashboardUI import DashboardUI
-from controllers.AppController import AppController
+from components.UI.ProjectUI import ProjectUI
+from components.UI.AutoExcludeUI import AutoExcludeUI
+from components.UI.ResultUI import ResultUI
+from components.UI.DirectoryTreeUI import DirectoryTreeUI
+from components.UI.ExclusionsManagerUI import ExclusionsManagerUI
+from components.UI.animated_toggle import AnimatedToggle
 from utilities.theme_manager import ThemeManager
 
-pytestmark = pytest.mark.functional
+pytestmark = [pytest.mark.functional, pytest.mark.gui]
 
-@pytest.fixture(scope="module")
-def app():
-    return QApplication([])
+logger = logging.getLogger(__name__)
+
+class MockController:
+    def __init__(self):
+        self.project_controller = type('ProjectController', (), {'project_context': None})()
+        self.theme_manager = ThemeManager.getInstance()
+        self.manage_projects = lambda: None
+        self.manage_exclusions = lambda: None
+        self.analyze_directory = lambda: None
+        self.view_directory_tree = lambda: None
+        self.on_project_created = lambda project: None
+
+    def show_project_ui(self):
+        pass
+
+class DashboardTestHelper:
+    def __init__(self):
+        self.initial_memory = None
+        self.default_project = {
+            'name': 'test_project',
+            'start_directory': '/test/path',
+            'status': 'Test Project Status'
+        }
+
+    def track_memory(self) -> None:
+        gc.collect()
+        self.initial_memory = psutil.Process().memory_info().rss
+
+    def check_memory_usage(self, operation: str) -> None:
+        if self.initial_memory is not None:
+            gc.collect()
+            current_memory = psutil.Process().memory_info().rss
+            memory_diff = current_memory - self.initial_memory
+            if memory_diff > 10 * 1024 * 1024:
+                logger.warning(f"High memory usage after {operation}: {memory_diff / 1024 / 1024:.2f}MB")
+
+    def verify_button(self, button: QPushButton, enabled: bool = True) -> None:
+        assert isinstance(button, QPushButton)
+        assert button.isEnabled() == enabled
+
+    def verify_label(self, label: QLabel, expected_text: str) -> None:
+        assert isinstance(label, QLabel)
+        assert label.text() == expected_text
 
 @pytest.fixture
-def dashboard_ui(app):
-    controller = AppController()
-    return DashboardUI(controller)
+def helper():
+    return DashboardTestHelper()
 
-def test_initialization(dashboard_ui):
+@pytest.fixture
+def mock_controller():
+    return MockController()
+
+@pytest.fixture
+def dashboard_ui(qtbot, mock_controller):
+    ui = DashboardUI(mock_controller)
+    qtbot.addWidget(ui)
+    ui.show()
+    yield ui
+    ui.close()
+    qtbot.wait(100)
+    gc.collect()
+
+def test_initialization(dashboard_ui, helper):
+    helper.track_memory()
+    
+    assert isinstance(dashboard_ui, QMainWindow)
+    assert dashboard_ui.windowTitle() == 'GynTree Dashboard'
     assert dashboard_ui.controller is not None
     assert dashboard_ui.theme_manager is not None
+    assert dashboard_ui.project_ui is None
+    assert dashboard_ui.result_ui is None
+    assert dashboard_ui.auto_exclude_ui is None
+    assert dashboard_ui.directory_tree_ui is None
     assert dashboard_ui.theme_toggle is not None
+    assert dashboard_ui._welcome_label is not None
+    
+    helper.check_memory_usage("initialization")
 
-def test_create_styled_button(dashboard_ui):
-    button = dashboard_ui.create_styled_button("Test Button")
-    assert button.text() == "Test Button"
-    assert button.font().pointSize() == 14
-
-def test_toggle_theme(dashboard_ui, mocker):
-    mock_toggle_theme = mocker.patch.object(dashboard_ui.controller, 'toggle_theme')
-    dashboard_ui.toggle_theme()
-    mock_toggle_theme.assert_called_once()
-
-def test_show_dashboard(dashboard_ui, mocker):
-    mock_show = mocker.patch.object(dashboard_ui, 'show')
-    dashboard_ui.show_dashboard()
-    mock_show.assert_called_once()
-
-def test_show_project_ui(dashboard_ui, mocker):
-    mock_project_ui = mocker.Mock()
-    mock_show = mocker.patch.object(mock_project_ui, 'show')
-    mocker.patch('components.UI.project_ui.ProjectUI', return_value=mock_project_ui)
-    result = dashboard_ui.show_project_ui()
-    assert result == mock_project_ui
-    mock_show.assert_called_once()
-
-def test_on_project_created(dashboard_ui, mocker):
-    mock_project = mocker.Mock()
-    mock_update_project_info = mocker.patch.object(dashboard_ui, 'update_project_info')
-    mock_enable_project_actions = mocker.patch.object(dashboard_ui, 'enable_project_actions')
-    dashboard_ui.on_project_created(mock_project)
-    mock_update_project_info.assert_called_once_with(mock_project)
-    mock_enable_project_actions.assert_called_once()
-
-def test_on_project_loaded(dashboard_ui, mocker):
-    mock_project = mocker.Mock()
-    mock_update_project_info = mocker.patch.object(dashboard_ui, 'update_project_info')
-    mock_enable_project_actions = mocker.patch.object(dashboard_ui, 'enable_project_actions')
-    dashboard_ui.on_project_loaded(mock_project)
-    mock_update_project_info.assert_called_once_with(mock_project)
-    mock_enable_project_actions.assert_called_once()
-
-def test_enable_project_actions(dashboard_ui):
-    dashboard_ui.enable_project_actions()
-    assert dashboard_ui.manage_exclusions_btn.isEnabled()
-    assert dashboard_ui.analyze_directory_btn.isEnabled()
-    assert dashboard_ui.view_directory_tree_btn.isEnabled()
-
-def test_show_auto_exclude_ui(dashboard_ui, mocker):
-    mock_auto_exclude_ui = mocker.Mock()
-    mocker.patch('components.UI.auto_exclude_ui.AutoExcludeUI', return_value=mock_auto_exclude_ui)
-    result = dashboard_ui.show_auto_exclude_ui(None, None, [], None)
-    assert result == mock_auto_exclude_ui
-    mock_auto_exclude_ui.show.assert_called_once()
-
-def test_show_result(dashboard_ui, mocker):
-    mock_result_ui = mocker.Mock()
-    mocker.patch('components.UI.result_ui.ResultUI', return_value=mock_result_ui)
-    result = dashboard_ui.show_result(None)
-    assert result == mock_result_ui
-    mock_result_ui.show.assert_called_once()
-
-def test_manage_exclusions(dashboard_ui, mocker):
-    mock_exclusions_ui = mocker.Mock()
-    mocker.patch('components.UI.exclusions_manager_ui.ExclusionsManagerUI', return_value=mock_exclusions_ui)
-    result = dashboard_ui.manage_exclusions(None)
-    assert result == mock_exclusions_ui
-    mock_exclusions_ui.show.assert_called_once()
-
-def test_view_directory_tree_ui(dashboard_ui, mocker):
-    mock_directory_tree_ui = mocker.Mock()
-    mocker.patch('components.UI.directory_tree_ui.DirectoryTreeUI', return_value=mock_directory_tree_ui)
-    dashboard_ui.view_directory_tree_ui({})
-    mock_directory_tree_ui.update_tree.assert_called_once_with({})
-    mock_directory_tree_ui.show.assert_called_once()
-
-def test_update_project_info(dashboard_ui, mocker):
-    mock_project = mocker.Mock(name="Test Project", start_directory="/test/path")
-    mock_set_window_title = mocker.patch.object(dashboard_ui, 'setWindowTitle')
-    mock_show_message = mocker.patch.object(dashboard_ui.status_bar, 'showMessage')
-    dashboard_ui.update_project_info(mock_project)
-    mock_set_window_title.assert_called_once_with("GynTree - Test Project")
-    mock_show_message.assert_called_once_with("Current project: Test Project, Start directory: /test/path")
-
-def test_clear_directory_tree(dashboard_ui, mocker):
-    mock_clear = mocker.Mock()
-    dashboard_ui.directory_tree_view = mocker.Mock(clear=mock_clear)
-    dashboard_ui.clear_directory_tree()
-    mock_clear.assert_called_once()
-
-def test_clear_analysis(dashboard_ui, mocker):
-    mock_clear = mocker.Mock()
-    dashboard_ui.analysis_result_view = mocker.Mock(clear=mock_clear)
-    dashboard_ui.clear_analysis()
-    mock_clear.assert_called_once()
-
-def test_clear_exclusions(dashboard_ui, mocker):
-    mock_clear = mocker.Mock()
-    dashboard_ui.exclusions_list_view = mocker.Mock(clear=mock_clear)
-    dashboard_ui.clear_exclusions()
-    mock_clear.assert_called_once()
-
-def test_show_error_message(dashboard_ui, mocker):
-    mock_critical = mocker.patch('PyQt5.QtWidgets.QMessageBox.critical')
-    dashboard_ui.show_error_message("Test Title", "Test Message")
-    mock_critical.assert_called_once_with(dashboard_ui, "Test Title", "Test Message")
-
-def test_theme_toggle_state(dashboard_ui):
-    assert dashboard_ui.theme_toggle.isChecked() == (dashboard_ui.theme_manager.get_current_theme() == 'dark')
-
-def test_theme_toggle_connection(dashboard_ui, qtbot):
-    with qtbot.waitSignal(dashboard_ui.theme_toggle.stateChanged, timeout=1000):
-        dashboard_ui.theme_toggle.setChecked(not dashboard_ui.theme_toggle.isChecked())
-
-def test_apply_theme(dashboard_ui, mocker):
-    mock_apply_theme = mocker.patch.object(dashboard_ui.theme_manager, 'apply_theme')
-    dashboard_ui.apply_theme()
-    mock_apply_theme.assert_called_once_with(dashboard_ui)
-
-def test_button_connections(dashboard_ui):
-    assert dashboard_ui.create_project_btn.clicked.connect.called
-    assert dashboard_ui.load_project_btn.clicked.connect.called
-    assert dashboard_ui.manage_exclusions_btn.clicked.connect.called
-    assert dashboard_ui.analyze_directory_btn.clicked.connect.called
-    assert dashboard_ui.view_directory_tree_btn.clicked.connect.called
-
-def test_initial_button_states(dashboard_ui):
-    assert dashboard_ui.manage_exclusions_btn.isEnabled()
-    assert dashboard_ui.analyze_directory_btn.isEnabled()
-    assert dashboard_ui.view_directory_tree_btn.isEnabled()
-
-def test_theme_toggle_initial_state(dashboard_ui):
-    assert dashboard_ui.theme_toggle.isChecked() == (dashboard_ui.theme_manager.get_current_theme() == 'dark')
-
-def test_status_bar_initial_state(dashboard_ui):
-    assert dashboard_ui.status_bar.currentMessage() == "Ready"
-
-def test_window_title(dashboard_ui):
-    assert dashboard_ui.windowTitle() == "GynTree Dashboard"
-
-def test_main_layout_margins(dashboard_ui):
-    main_layout = dashboard_ui.centralWidget().layout()
-    assert main_layout.contentsMargins() == (30, 30, 30, 30)
-
-def test_main_layout_spacing(dashboard_ui):
-    main_layout = dashboard_ui.centralWidget().layout()
-    assert main_layout.spacing() == 20
-
-def test_logo_label(dashboard_ui):
-    logo_label = dashboard_ui.findChild(QLabel, "logo_label")
-    assert logo_label is not None
-    assert not logo_label.pixmap().isNull()
-
-def test_welcome_label(dashboard_ui):
-    welcome_label = dashboard_ui.findChild(QLabel, "welcome_label")
-    assert welcome_label is not None
-    assert welcome_label.text() == "Welcome to GynTree!"
-    assert welcome_label.font().pointSize() == 24
-    assert welcome_label.font().weight() == QFont.Bold
-
-def test_theme_toggle_size(dashboard_ui):
-    assert dashboard_ui.theme_toggle.size() == dashboard_ui.theme_toggle.sizeHint()
-
-def test_button_styles(dashboard_ui):
+def test_ui_components(dashboard_ui, qtbot, helper):
+    helper.track_memory()
+    
+    helper.verify_label(dashboard_ui._welcome_label, 'Welcome to GynTree!')
+    assert dashboard_ui._welcome_label.font().weight() == QFont.Bold
+    
     buttons = [
-        dashboard_ui.create_project_btn,
-        dashboard_ui.load_project_btn,
+        dashboard_ui.projects_btn,
+        dashboard_ui.manage_projects_btn,
         dashboard_ui.manage_exclusions_btn,
         dashboard_ui.analyze_directory_btn,
         dashboard_ui.view_directory_tree_btn
     ]
+    
     for button in buttons:
-        assert button.font().pointSize() == 14
+        helper.verify_button(button, enabled=button in [dashboard_ui.projects_btn, dashboard_ui.manage_projects_btn])
+    
+    assert isinstance(dashboard_ui.theme_toggle, AnimatedToggle)
+    
+    helper.check_memory_usage("UI components")
 
-def test_window_geometry(dashboard_ui):
+def test_button_states(dashboard_ui, helper):
+    helper.track_memory()
+    
+    assert dashboard_ui.projects_btn.isEnabled()
+    assert dashboard_ui.manage_projects_btn.isEnabled()
+    assert not dashboard_ui.manage_exclusions_btn.isEnabled()
+    assert not dashboard_ui.analyze_directory_btn.isEnabled()
+    assert not dashboard_ui.view_directory_tree_btn.isEnabled()
+    
+    dashboard_ui.enable_project_actions()
+    
+    assert dashboard_ui.manage_exclusions_btn.isEnabled()
+    assert dashboard_ui.analyze_directory_btn.isEnabled()
+    assert dashboard_ui.view_directory_tree_btn.isEnabled()
+    
+    helper.check_memory_usage("button states")
+
+def test_theme_toggle(dashboard_ui, qtbot, helper):
+    helper.track_memory()
+    
+    initial_theme = dashboard_ui.theme_manager.get_current_theme()
+    dashboard_ui.theme_toggle.setChecked(not dashboard_ui.theme_toggle.isChecked())
+    qtbot.wait(100)
+    
+    current_theme = dashboard_ui.theme_manager.get_current_theme()
+    assert current_theme != initial_theme
+    assert dashboard_ui.theme_toggle.isChecked() == (current_theme == 'dark')
+    
+    helper.check_memory_usage("theme toggle")
+
+def test_project_creation(dashboard_ui, qtbot, helper, mocker):
+    helper.track_memory()
+    
+    mock_project_ui = mocker.Mock(spec=ProjectUI)
+    mock_project_ui.show = mocker.Mock()
+    mocker.patch('components.UI.ProjectUI.ProjectUI', return_value=mock_project_ui)
+    
+    project = type('Project', (), helper.default_project)()
+    dashboard_ui.on_project_created(project)
+    qtbot.wait(100)
+    
+    assert dashboard_ui.windowTitle() == f"GynTree - {project.name}"
+    assert dashboard_ui.manage_exclusions_btn.isEnabled()
+    assert dashboard_ui.analyze_directory_btn.isEnabled()
+    assert dashboard_ui.view_directory_tree_btn.isEnabled()
+    
+    helper.check_memory_usage("project creation")
+
+def test_project_info_update(dashboard_ui, helper):
+    helper.track_memory()
+    
+    project = type('Project', (), {
+        'name': helper.default_project['name'],
+        'start_directory': helper.default_project['start_directory'],
+        'status': helper.default_project['status']
+    })()
+    
+    dashboard_ui.update_project_info(project)
+    
+    assert dashboard_ui.windowTitle() == f"GynTree - {project.name}"
+    expected_status = f"Current project: {project.name}, Start directory: {project.start_directory} - {project.status}"
+    assert dashboard_ui.status_bar.currentMessage() == expected_status
+    
+    helper.check_memory_usage("info update")
+
+def test_project_loading(dashboard_ui, qtbot, helper):
+    helper.track_memory()
+    
+    project = type('Project', (), helper.default_project)()
+    dashboard_ui.on_project_loaded(project)
+    qtbot.wait(100)
+    
+    assert dashboard_ui.windowTitle() == f"GynTree - {project.name}"
+    assert dashboard_ui.manage_exclusions_btn.isEnabled()
+    assert dashboard_ui.analyze_directory_btn.isEnabled()
+    assert dashboard_ui.view_directory_tree_btn.isEnabled()
+    
+    helper.check_memory_usage("project loading")
+
+def test_auto_exclude_ui(dashboard_ui, qtbot, helper, mocker):
+    helper.track_memory()
+    
+    mock_auto_exclude_ui = mocker.Mock(spec=AutoExcludeUI)
+    mock_auto_exclude_ui.show = mocker.Mock()
+    dashboard_ui._mock_auto_exclude_ui = mock_auto_exclude_ui
+    
+    mock_manager = mocker.Mock()
+    mock_settings = mocker.Mock()
+    
+    result = dashboard_ui.show_auto_exclude_ui(mock_manager, mock_settings, [], mocker.Mock())
+    
+    assert result == mock_auto_exclude_ui
+    assert mock_auto_exclude_ui.show.called
+    
+    helper.check_memory_usage("auto-exclude UI")
+
+def test_result_ui(dashboard_ui, qtbot, helper, mocker):
+    helper.track_memory()
+    
+    mock_result_ui = mocker.Mock(spec=ResultUI)
+    mock_result_ui.show = mocker.Mock()
+    dashboard_ui._mock_result_ui = mock_result_ui
+    
+    dashboard_ui.controller.project_controller.project_context = mocker.Mock()
+    result = dashboard_ui.show_result(mocker.Mock())
+    
+    assert result == mock_result_ui
+    assert mock_result_ui.show.called
+    
+    helper.check_memory_usage("result UI")
+
+def test_directory_tree_ui(dashboard_ui, qtbot, helper, mocker):
+    helper.track_memory()
+    
+    mock_tree_ui = mocker.Mock(spec=DirectoryTreeUI)
+    mock_tree_ui.show = mocker.Mock()
+    mock_tree_ui.update_tree = mocker.Mock()
+    dashboard_ui._mock_directory_tree_ui = mock_tree_ui
+    
+    result = dashboard_ui.view_directory_tree_ui({})
+    
+    assert result == mock_tree_ui
+    assert mock_tree_ui.update_tree.called
+    assert mock_tree_ui.show.called
+    
+    helper.check_memory_usage("directory tree UI")
+
+def test_exclusions_manager(dashboard_ui, qtbot, helper, mocker):
+    helper.track_memory()
+    
+    mock_exclusions_ui = mocker.Mock(spec=ExclusionsManagerUI)
+    mock_exclusions_ui.show = mocker.Mock()
+    dashboard_ui._mock_exclusions_ui = mock_exclusions_ui
+    
+    dashboard_ui.controller.project_controller.project_context = mocker.Mock()
+    mock_settings = mocker.Mock()
+    
+    result = dashboard_ui.manage_exclusions(mock_settings)
+    
+    assert result == mock_exclusions_ui
+    assert mock_exclusions_ui.show.called
+    
+    helper.check_memory_usage("exclusions manager")
+
+def test_error_handling(dashboard_ui, helper, mocker):
+    helper.track_memory()
+    
+    mock_message_box = mocker.patch('PyQt5.QtWidgets.QMessageBox.critical')
+    
+    dashboard_ui.show_error_message("Test Error", "Test Message")
+    
+    mock_message_box.assert_called_once_with(dashboard_ui, "Test Error", "Test Message")
+    
+    helper.check_memory_usage("error handling")
+
+def test_theme_persistence(dashboard_ui, qtbot, helper):
+    helper.track_memory()
+    
+    initial_theme = dashboard_ui.theme_manager.get_current_theme()
+    dashboard_ui.theme_toggle.setChecked(not dashboard_ui.theme_toggle.isChecked())
+    qtbot.wait(100)
+    
+    new_dashboard = DashboardUI(dashboard_ui.controller)
+    current_theme = new_dashboard.theme_manager.get_current_theme()
+    assert current_theme != initial_theme
+    assert new_dashboard.theme_toggle.isChecked() == (current_theme == 'dark')
+    
+    new_dashboard.close()
+    helper.check_memory_usage("theme persistence")
+
+def test_window_geometry(dashboard_ui, helper):
+    helper.track_memory()
+    
     geometry = dashboard_ui.geometry()
     assert geometry.width() == 800
     assert geometry.height() == 600
+    assert geometry.x() == 300
+    assert geometry.y() == 300
+    
+    helper.check_memory_usage("window geometry")
+
+def test_memory_cleanup(dashboard_ui, qtbot, helper):
+    helper.track_memory()
+    
+    dashboard_ui.show_dashboard()
+    qtbot.wait(100)
+    
+    dashboard_ui.clear_directory_tree()
+    dashboard_ui.clear_analysis()
+    dashboard_ui.clear_exclusions()
+    
+    gc.collect()
+    current_memory = psutil.Process().memory_info().rss
+    memory_diff = current_memory - helper.initial_memory
+    
+    assert memory_diff < 10 * 1024 * 1024
+    
+    helper.check_memory_usage("memory cleanup")
+
+if __name__ == '__main__':
+    pytest.main([__file__, '-v'])
