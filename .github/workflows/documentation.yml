@@ -15,7 +15,7 @@ on:
       - "**.md"
       - "mkdocs.yml"
       - "requirements-docs.txt"
-  workflow_dispatch: # Allow manual triggers
+  workflow_dispatch:
 
 jobs:
   build:
@@ -36,22 +36,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-docs.txt
 
-      - name: Install git
+      - name: Check documentation
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git
+          python scripts/check_docs.py
 
-      - name: Configure Git
+      - name: Build documentation
+        run: |
+          mkdocs build --strict --verbose
+        env:
+          GOOGLE_ANALYTICS_KEY: ${{ secrets.GOOGLE_ANALYTICS_KEY }}
+
+      - name: Deploy Documentation
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Build documentation
-        run: mkdocs build --strict --verbose
-
-      - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: |
           mkdocs gh-deploy --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
