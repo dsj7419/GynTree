@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - "artwork/**"
+  pull_request:
+    branches: [main, develop]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - "artwork/**"
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.12"]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 \
+            libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+            libxcb-xinerama0 libxcb-xfixes0 x11-utils
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Code Quality Checks
+        run: |
+          black --check src tests
+          flake8 src tests
+          isort --check-only src tests
+          mypy src --ignore-missing-imports
+
+      - name: Run Tests (Windows)
+        if: runner.os == 'Windows'
+        env:
+          GITHUB_CI: "true"
+          CONFIG_FILE: "tests/github_ci_config.json"
+        run: |
+          python run_tests.py --ci --debug --config tests/github_ci_config.json
+
+      - name: Run Tests (Linux)
+        if: runner.os == 'Linux'
+        env:
+          GITHUB_CI: "true"
+          CONFIG_FILE: "tests/github_ci_config.json"
+          DISPLAY: ":99"
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 3
+          python run_tests.py --ci --debug --config tests/github_ci_config.json
+
+      - name: Process Test Results
+        if: always()
+        run: |
+          python -c "
+          import json, sys
+          with open('tests/reports/latest_results.json') as f:
+              results = json.load(f)
+              sys.exit(0 if results.get('success') else 1)
+          "
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            tests/reports/coverage/
+            tests/reports/html/
+            tests/reports/logs/
+            tests/reports/latest_results.json
+          retention-days: 14
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./tests/reports/coverage/coverage.xml
+          fail_ci_if_error: true
+          verbose: true

@@ -1,0 +1,25 @@
+{
+  "test_options": {
+    "parallel": true,
+    "html_report": true,
+    "coverage": true,
+    "timeout": 300,
+    "test_types": ["unit", "integration", "functional"],
+    "skip_types": ["performance"],
+    "reports": {
+      "coverage": true,
+      "html": true,
+      "logs": true
+    },
+    "artifacts": {
+      "save_on_failure": true,
+      "cleanup_on_success": true
+    }
+  },
+  "environment": {
+    "ci_mode": true,
+    "debug": true,
+    "qt_wait_timeout": 1000,
+    "cleanup_timeout": 10
+  }
+}

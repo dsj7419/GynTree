@@ -1,32 +1,52 @@
 import os
 import sys
+from pathlib import Path
 
+class ResourcePathManager:
+    """Manages resource paths across different environments (dev/production)"""
+    
+    def __init__(self):
+        self._base_path = self._determine_base_path()
+        
+    def _determine_base_path(self) -> Path:
+        """Determine the base path for resources"""
+        try:
+            # Check if running as PyInstaller bundle
+            base_path = Path(sys._MEIPASS)
+        except AttributeError:
+            # Get the project root directory
+            current_file = Path(__file__)
+            # Go up two levels: utilities -> src -> project_root
+            base_path = current_file.parent.parent.parent
+            
+        return base_path
+    
+    def get_resource_path(self, relative_path: str) -> str:
+        """
+        Get absolute path to resource, works both for:
+        - Development
+        - PyInstaller bundles
+        """
+        resource_path = self.base_path / relative_path
+        
+        # First check if resource exists in src directory
+        src_path = self.base_path / 'src' / relative_path
+        if src_path.exists():
+            return str(src_path)
+            
+        # Then check in root directory
+        if resource_path.exists():
+            return str(resource_path)
+            
+        raise FileNotFoundError(f"Resource not found: {relative_path}")
+    
+    @property
+    def base_path(self) -> Path:
+        return self._base_path
 
-def get_resource_path(relative_path):
-    """
-    Get absolute path to resource, works for dev and for PyInstaller.
-    Handles both root-level resources (like assets) and src-level resources (like styles).
-    """
-    try:
-        # If we're running as a PyInstaller bundle
-        base_path = sys._MEIPASS
-    except AttributeError:
-        # If we're running in a normal Python environment
-        # Get the directory containing the current file
-        current_dir = os.path.dirname(__file__)
-        # Go up to the src directory
-        src_dir = os.path.dirname(current_dir)
-        # Go up one more level to the root project directory
-        root_dir = os.path.dirname(src_dir)
+# Global instance
+_manager = ResourcePathManager()
 
-        # Check if the resource exists in src directory first
-        src_path = os.path.join(src_dir, relative_path)
-        if os.path.exists(src_path):
-            return os.path.normpath(src_path)
-
-        # If not found in src, look in root directory
-        root_path = os.path.join(root_dir, relative_path)
-        return os.path.normpath(root_path)
-
-    # For PyInstaller bundle, just use the base path
-    return os.path.normpath(os.path.join(base_path, relative_path))
+def get_resource_path(relative_path: str) -> str:
+    """Global function to get resource path"""
+    return _manager.get_resource_path(relative_path)
