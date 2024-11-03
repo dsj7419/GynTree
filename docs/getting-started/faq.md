@@ -46,10 +46,10 @@ A: Ensure you have the latest version of GynTree and all its dependencies instal
 
 ### Q: How can I extend GynTree to support additional file types?
 
-A: You can create a custom ExclusionService class for new file types. Refer to the [Contributing Guide](CONTRIBUTING.md) and [API Reference](api_reference.md) for detailed instructions.
+A: You can create a custom ExclusionService class for new file types. Refer to the [Contributing Guide](../contributing/guidelines.md) and [API Reference](../api/overview.md) for detailed instructions.
 
 ### Q: Is there a plugin system for GynTree?
 
 A: Not currently, but it's on our roadmap. For now, you can extend functionality by modifying the source code directly.
 
-For more detailed information, please refer to our [User Guide](user_guide.md) and [Configuration Guide](configuration.md). If your question isn't answered here, feel free to [open an issue](https://github.com/dsj7419/GynTree/issues) on our GitHub repository.
+For more detailed information, please refer to our [User Guide](../user-guide/basic-usage.md) and [Configuration Guide](../user-guide/configuration.md). If your question isn't answered here, feel free to [open an issue](https://github.com/dsj7419/GynTree/issues) on our GitHub repository.

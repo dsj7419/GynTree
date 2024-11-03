@@ -1,0 +1,41 @@
+name: Documentation
+
+on:
+  push:
+    paths:
+      - "docs/**"
+      - "**.md"
+      - "mkdocs.yml"
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "docs/**"
+      - "**.md"
+      - "mkdocs.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs-material mkdocs-awesome-pages-plugin mkdocs-minify-plugin
+
+      - name: Build documentation
+        run: mkdocs build --strict
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site

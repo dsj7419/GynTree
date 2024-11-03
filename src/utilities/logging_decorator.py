@@ -3,6 +3,7 @@ from functools import wraps
 
 logger = logging.getLogger(__name__)
 
+
 def log_method(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -14,4 +15,5 @@ def log_method(func):
         except Exception as e:
             logger.exception(f"Exception in {func.__name__}: {str(e)}")
             raise
+
     return wrapper

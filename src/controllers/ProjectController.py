@@ -13,19 +13,21 @@ Responsibilities:
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 from models.Project import Project
-from services.ProjectManager import ProjectManager
 from services.ProjectContext import ProjectContext
+from services.ProjectManager import ProjectManager
 from utilities.error_handler import handle_exception
 from utilities.logging_decorator import log_method
 
 logger = logging.getLogger(__name__)
 
+
 class ProjectController:
     """
     Controls project-related operations and maintains project state.
-    
+
     This controller is responsible for managing the lifecycle of projects,
     including loading, saving, and transitioning between projects. It ensures
     proper initialization and cleanup of project resources.
@@ -93,15 +95,17 @@ class ProjectController:
         try:
             logger.debug(f"Loading project: {project_name}")
             loaded_project = self.project_manager.load_project(project_name)
-            
+
             if loaded_project:
-                logger.debug(f"Project data loaded, transitioning to project: {loaded_project.name}")
+                logger.debug(
+                    f"Project data loaded, transitioning to project: {loaded_project.name}"
+                )
                 self._transition_to_project(loaded_project)
                 return loaded_project
-            
+
             logger.error(f"Failed to load project data for: {project_name}")
             return None
-            
+
         except Exception as e:
             logger.error(f"Error loading project {project_name}: {str(e)}")
             self._cleanup_current_project()
@@ -134,7 +138,9 @@ class ProjectController:
             # Initialize the new project's resources
             logger.debug(f"Initializing resources for project: {project.name}")
             if not self.project_context.initialize():
-                raise RuntimeError(f"Failed to initialize project context for {project.name}")
+                raise RuntimeError(
+                    f"Failed to initialize project context for {project.name}"
+                )
 
             logger.info(f"Successfully transitioned to project: {project.name}")
 
@@ -154,27 +160,33 @@ class ProjectController:
         """
         try:
             if self.project_context:
-                logger.debug(f"Starting cleanup for project: {self.current_project.name}")
+                logger.debug(
+                    f"Starting cleanup for project: {self.current_project.name}"
+                )
                 try:
                     self.project_context.save_settings()
                 except Exception as e:
-                    logger.warning(f"Non-critical error saving project settings: {str(e)}")
-                
+                    logger.warning(
+                        f"Non-critical error saving project settings: {str(e)}"
+                    )
+
                 try:
                     self.project_context.close()
                 except Exception as e:
-                    logger.warning(f"Non-critical error closing project context: {str(e)}")
-            
+                    logger.warning(
+                        f"Non-critical error closing project context: {str(e)}"
+                    )
+
             if self.app_controller.ui_controller:
                 try:
                     self.app_controller.ui_controller.reset_ui()
                 except Exception as e:
                     logger.warning(f"Non-critical error resetting UI: {str(e)}")
-            
+
             self.project_context = None
             self.current_project = None
             logger.debug("Project cleanup completed successfully")
-            
+
         except Exception as e:
             logger.error(f"Error during project cleanup: {str(e)}")
             # Ensure state is reset even if cleanup fails
@@ -193,7 +205,7 @@ class ProjectController:
         """
         if self.project_context:
             return self.project_context.get_theme_preference()
-        return 'light'
+        return "light"
 
     @handle_exception
     @log_method
@@ -215,7 +227,8 @@ class ProjectController:
         """
         if self.project_context:
             result_ui = self.app_controller.ui_controller.show_result(
-                self.project_context.directory_analyzer)
+                self.project_context.directory_analyzer
+            )
             result_ui.update_result()
         else:
             logger.error("Cannot analyze directory: project_context is None.")
@@ -240,9 +253,11 @@ class ProjectController:
         Returns:
             bool: True if a project is loaded and initialized, False otherwise
         """
-        return (self.current_project is not None and 
-                self.project_context is not None and 
-                self.project_context.is_initialized)
+        return (
+            self.current_project is not None
+            and self.project_context is not None
+            and self.project_context.is_initialized
+        )
 
     def get_project_info(self) -> Dict[str, Any]:
         """
@@ -255,9 +270,9 @@ class ProjectController:
             return {}
 
         return {
-            'name': self.current_project.name,
-            'start_directory': self.current_project.start_directory,
-            'is_initialized': self.project_context.is_initialized,
-            'project_types': list(self.project_context.project_types),
-            'theme': self.project_context.get_theme_preference()
+            "name": self.current_project.name,
+            "start_directory": self.current_project.start_directory,
+            "is_initialized": self.project_context.is_initialized,
+            "project_types": list(self.project_context.project_types),
+            "theme": self.project_context.get_theme_preference(),
         }

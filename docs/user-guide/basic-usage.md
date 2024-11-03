@@ -15,7 +15,7 @@ Welcome to the GynTree User Guide. This document will walk you through the main 
 
 ## Getting Started
 
-After [installing GynTree](INSTALL.md), launch the application by running:
+After [Installation Guide](../getting-started/installation.md), launch the application by running:
 
 ```bash
 python src/App.py
@@ -110,4 +110,4 @@ For advanced exclusion patterns:
 2. Click "Add Custom Rule"
 3. Enter a regex pattern for files or directories to exclude
 
-For more detailed information on configuration options, refer to our [Configuration Guide](configuration.md). If you encounter any issues, check our [FAQ](faq.md) or [open an issue](https://github.com/dsj7419/GynTree/issues) on GitHub.
+For more detailed information on configuration options, refer to our [Configuration Guide](configuration.md). If you encounter any issues, check our [FAQ](../getting-started/faq.md) or [open an issue](https://github.com/dsj7419/GynTree/issues) on GitHub.

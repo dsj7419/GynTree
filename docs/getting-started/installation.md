@@ -97,8 +97,8 @@ For more detailed troubleshooting, check our [FAQ](faq.md) or [open an issue](ht
 
 Now that you have GynTree installed, why not:
 
-- Read through our [User Guide](user_guide.md) to learn about all the features
-- Check out the [Configuration](configuration.md) options to customize GynTree
-- [Contribute](CONTRIBUTING.md) to the project and help make GynTree even better!
+- Read through our [User Guide](../user-guide/basic-usage.md) to learn about all the features
+- Check out the [Configuration Guide](../user-guide/configuration.md) options to customize GynTree
+- [Contributing](../contributing/guidelines.md) to the project and help make GynTree even better!
 
-For more detailed information on configuration and usage, please refer to our [User Guide](user_guide.md) and [Configuration Guide](configuration.md).
+For more detailed information on configuration and usage, please refer to our [User Guide](../user-guide/basic-usage.md) and [Configuration Guide](../user-guide/configuration.md).

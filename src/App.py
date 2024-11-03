@@ -1,12 +1,17 @@
-import sys
 import logging
+import sys
+
 from PyQt5.QtWidgets import QApplication
+
 from controllers.AppController import AppController
 from utilities.error_handler import ErrorHandler
 from utilities.theme_manager import ThemeManager
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 def main():
     sys.excepthook = ErrorHandler.global_exception_handler
@@ -28,6 +33,7 @@ def main():
     theme_manager.apply_theme_to_all_windows(app)
 
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     try:

@@ -1,0 +1,12 @@
+black==23.12.1
+flake8==7.0.0
+mypy==1.8.0
+pytest==8.0.0
+pytest-cov==4.1.0
+isort==5.13.2
+build==1.0.3
+twine==4.0.2
+mkdocs==1.5.3
+mkdocs-material==9.5.3
+mkdocs-awesome-pages-plugin==2.9.2
+mkdocs-minify-plugin==0.7.1

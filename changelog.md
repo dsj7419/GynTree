@@ -1,5 +1,32 @@
 # Changelog
 
+## [v0.6.0-pre]
+
+## Changes
+
+- Added new Project Manager to delete projects as needed.
+- Fixed test hanging issues in test_app_controller.py and implemented proper timeout handling
+- Added comprehensive test suite with 438 passing tests
+- Achieved 77.6% code coverage across the application
+- Implemented new test files for better component isolation
+- Added robust cleanup and resource management
+- Improved test runner configuration
+
+## Testing
+
+- All 438 tests passing
+- Test execution time: 1:45 minutes
+- No timeout or hanging issues
+- Clean resource cleanup
+- Coverage report generated
+
+## Notable Coverage Improvements
+
+- UIController: 100%
+- Project Model: 100%
+- AutoExcludeUI: 100%
+- ProjectTypeDetector: 93%
+
 ## [v0.3.1-pre]
 
 - Implemented dark/light theme toggle
