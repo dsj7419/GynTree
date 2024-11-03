@@ -59,15 +59,8 @@ Define patterns for files and directories to be excluded globally:
 
 ```json
 {
-  "directories": [
-    "node_modules",
-    ".git",
-    "__pycache__"
-  ],
-  "files": [
-    "*.pyc",
-    ".DS_Store"
-  ]
+  "directories": ["node_modules", ".git", "__pycache__"],
+  "files": ["*.pyc", ".DS_Store"]
 }
 ```
 
@@ -160,4 +153,4 @@ Adjust logging levels and output formats:
 }
 ```
 
-For more information on using these configurations, refer to the [User Guide](user_guide.md). If you encounter any issues, check our [FAQ](faq.md) or [open an issue](https://github.com/dsj7419/GynTree/issues) on GitHub.
+For more information on using these configurations, refer to the [User Guide](basic-usage.md). If you encounter any issues, check our [FAQ](../getting-started/faq.md) or [open an issue](https://github.com/dsj7419/GynTree/issues) on GitHub.

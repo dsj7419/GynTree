@@ -1,27 +1,46 @@
 import logging
-from PyQt5.QtCore import (QObject, pyqtSignal, QThreadPool, QRunnable, 
-                         pyqtSlot, QCoreApplication, QMutex, QMutexLocker,
-                         QEvent, Qt, QTimer, QThread)
+
+from PyQt5.QtCore import (
+    QCoreApplication,
+    QEvent,
+    QMutex,
+    QMutexLocker,
+    QObject,
+    QRunnable,
+    Qt,
+    QThread,
+    QThreadPool,
+    QTimer,
+    pyqtSignal,
+    pyqtSlot,
+)
+
 from controllers.AutoExcludeWorker import AutoExcludeWorker
 
 logger = logging.getLogger(__name__)
 
+
 class WorkerFinishedEvent(QEvent):
     EventType = QEvent.Type(QEvent.User + 1)
+
     def __init__(self, result):
         super().__init__(WorkerFinishedEvent.EventType)
         self.result = result
 
+
 class WorkerErrorEvent(QEvent):
     EventType = QEvent.Type(QEvent.User + 2)
+
     def __init__(self, error):
         super().__init__(WorkerErrorEvent.EventType)
         self.error = error
+
 
 class WorkerSignals(QObject):
     finished = pyqtSignal(list)
     error = pyqtSignal(str)
     cleanup = pyqtSignal()  # New signal for cleanup
+
 
 class AutoExcludeWorkerRunnable(QRunnable):
     def __init__(self, project_context):
@@ -30,7 +49,7 @@ class AutoExcludeWorkerRunnable(QRunnable):
         self._priority = QThread.NormalPriority
         if project_context is None:
             raise ValueError("Project context cannot be None")
-        
+
         self.worker = AutoExcludeWorker(project_context)
         self.signals = WorkerSignals()
         self._is_running = False
@@ -61,14 +80,14 @@ class AutoExcludeWorkerRunnable(QRunnable):
                 self.signals.finished.emit(result)
             else:
                 self.signals.finished.emit([str(result)] if result is not None else [])
-        
+
         self._is_running = False
         QTimer.singleShot(0, self._process_events)
 
     def _handle_worker_error(self, error):
         if not self._stop_requested:
             self.signals.error.emit(str(error))  # Ensure raw error message
-        
+
         self._is_running = False
         QTimer.singleShot(0, self._process_events)
 
@@ -92,6 +111,7 @@ class AutoExcludeWorkerRunnable(QRunnable):
             self._is_running = False
             self._process_events()
 
+
 class ThreadController(QObject):
     worker_finished = pyqtSignal(list)
     worker_error = pyqtSignal(str)
@@ -104,7 +124,9 @@ class ThreadController(QObject):
         self._mutex = QMutex(QMutex.Recursive)  # Changed to recursive mutex
         self.moveToThread(QCoreApplication.instance().thread())
         QTimer.singleShot(0, self._process_events)
-        logger.debug(f"Multithreading with maximum {self.threadpool.maxThreadCount()} threads")
+        logger.debug(
+            f"Multithreading with maximum {self.threadpool.maxThreadCount()} threads"
+        )
 
     def start_auto_exclude_thread(self, project_context):
         if not project_context:
@@ -117,13 +139,17 @@ class ThreadController(QObject):
             def finished_handler(result):
                 with QMutexLocker(self._mutex):
                     event = WorkerFinishedEvent(result)
-                    QCoreApplication.instance().postEvent(self, event, Qt.HighEventPriority)
+                    QCoreApplication.instance().postEvent(
+                        self, event, Qt.HighEventPriority
+                    )
                     QTimer.singleShot(0, self._process_events)
 
             def error_handler(error):
                 with QMutexLocker(self._mutex):
                     event = WorkerErrorEvent(error)
-                    QCoreApplication.instance().postEvent(self, event, Qt.HighEventPriority)
+                    QCoreApplication.instance().postEvent(
+                        self, event, Qt.HighEventPriority
+                    )
                     QTimer.singleShot(0, self._process_events)
 
             worker.signals.finished.connect(finished_handler, Qt.QueuedConnection)
@@ -173,11 +199,11 @@ class ThreadController(QObject):
         with QMutexLocker(self._mutex):
             for worker in self.active_workers[:]:
                 try:
-                    if hasattr(worker.signals, 'cleanup'):
+                    if hasattr(worker.signals, "cleanup"):
                         worker.signals.cleanup.emit()
-                    if hasattr(worker.signals, 'finished'):
+                    if hasattr(worker.signals, "finished"):
                         worker.signals.finished.disconnect()
-                    if hasattr(worker.signals, 'error'):
+                    if hasattr(worker.signals, "error"):
                         worker.signals.error.disconnect()
                 except (TypeError, RuntimeError):
                     pass
@@ -195,7 +221,7 @@ class ThreadController(QObject):
             with QMutexLocker(self._mutex):
                 # Signal all workers to stop
                 for worker in self.active_workers:
-                    if hasattr(worker.signals, 'cleanup'):
+                    if hasattr(worker.signals, "cleanup"):
                         worker.signals.cleanup.emit()
 
                 self._cleanup_workers()
@@ -209,7 +235,9 @@ class ThreadController(QObject):
                 while not self.threadpool.waitForDone(WAIT_INTERVAL_MS):
                     total_waited += WAIT_INTERVAL_MS
                     if total_waited >= MAX_WAIT_MS:
-                        logger.warning(f"Thread pool cleanup timed out after {MAX_WAIT_MS}ms")
+                        logger.warning(
+                            f"Thread pool cleanup timed out after {MAX_WAIT_MS}ms"
+                        )
                         break
                     self._process_events()
 

@@ -1,16 +1,38 @@
-from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QPushButton, QScrollArea, QWidget,
-                             QTreeWidget, QTreeWidgetItem, QMessageBox, QHeaderView, QHBoxLayout)
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon, QFont
+import logging
 import os
+
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtWidgets import (
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
 from utilities.resource_path import get_resource_path
 from utilities.theme_manager import ThemeManager
-import logging
 
 logger = logging.getLogger(__name__)
 
+
 class AutoExcludeUI(QMainWindow):
-    def __init__(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context, theme_manager=None, apply_initial_theme=True):
+    def __init__(
+        self,
+        auto_exclude_manager,
+        settings_manager,
+        formatted_recommendations,
+        project_context,
+        theme_manager=None,
+        apply_initial_theme=True,
+    ):
         super().__init__()
         self.auto_exclude_manager = auto_exclude_manager
         self.settings_manager = settings_manager
@@ -21,11 +43,11 @@ class AutoExcludeUI(QMainWindow):
         self.folder_icon = QIcon(get_resource_path("assets/images/folder_icon.png"))
         self.file_icon = QIcon(get_resource_path("assets/images/file_icon.png"))
 
-        self.setWindowTitle('Auto-Exclude Recommendations')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+        self.setWindowTitle("Auto-Exclude Recommendations")
+        self.setWindowIcon(QIcon(get_resource_path("assets/images/GynTree_logo.ico")))
 
         self.init_ui()
-        
+
         self.theme_manager.themeChanged.connect(self.apply_theme)
 
         if apply_initial_theme:
@@ -38,11 +60,13 @@ class AutoExcludeUI(QMainWindow):
         main_layout.setSpacing(10)
 
         header_layout = QHBoxLayout()
-        title_label = QLabel('Auto-Exclude Recommendations', font=QFont('Arial', 16, QFont.Bold))
+        title_label = QLabel(
+            "Auto-Exclude Recommendations", font=QFont("Arial", 16, QFont.Bold)
+        )
         header_layout.addWidget(title_label)
 
-        collapse_btn = QPushButton('Collapse All')
-        expand_btn = QPushButton('Expand All')
+        collapse_btn = QPushButton("Collapse All")
+        expand_btn = QPushButton("Expand All")
         collapse_btn.setObjectName("collapse_btn")
         expand_btn.setObjectName("expand_btn")
         header_layout.addWidget(collapse_btn)
@@ -50,7 +74,7 @@ class AutoExcludeUI(QMainWindow):
         main_layout.addLayout(header_layout)
 
         self.tree_widget = QTreeWidget()
-        self.tree_widget.setHeaderLabels(['Name', 'Type'])
+        self.tree_widget.setHeaderLabels(["Name", "Type"])
         self.tree_widget.setColumnWidth(0, 300)
         self.tree_widget.setAlternatingRowColors(True)
         self.tree_widget.setIconSize(QSize(20, 20))
@@ -63,8 +87,8 @@ class AutoExcludeUI(QMainWindow):
         collapse_btn.clicked.connect(self.tree_widget.collapseAll)
         expand_btn.clicked.connect(self.tree_widget.expandAll)
 
-        apply_button = QPushButton('Apply Exclusions')
-        apply_button.setObjectName("apply_button") 
+        apply_button = QPushButton("Apply Exclusions")
+        apply_button.setObjectName("apply_button")
         apply_button.clicked.connect(self.apply_exclusions)
         main_layout.addWidget(apply_button, alignment=Qt.AlignCenter)
 
@@ -80,15 +104,19 @@ class AutoExcludeUI(QMainWindow):
 
         combined_exclusions = self.get_combined_exclusions()
 
-        categories = ['root_exclusions', 'excluded_dirs', 'excluded_files']
+        categories = ["root_exclusions", "excluded_dirs", "excluded_files"]
         for category in categories:
-            category_item = QTreeWidgetItem(root, [category.replace('_', ' ').title(), ''])
+            category_item = QTreeWidgetItem(
+                root, [category.replace("_", " ").title(), ""]
+            )
             category_item.setFlags(category_item.flags() & ~Qt.ItemIsUserCheckable)
 
             for path in sorted(combined_exclusions.get(category, [])):
                 item = QTreeWidgetItem(category_item, [path, category[:-1]])
-                item.setIcon(0, self.folder_icon if os.path.isdir(path) else self.file_icon)
-                if category != 'root_exclusions':
+                item.setIcon(
+                    0, self.folder_icon if os.path.isdir(path) else self.file_icon
+                )
+                if category != "root_exclusions":
                     item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
                     item.setCheckState(0, Qt.Checked)
 
@@ -98,14 +126,19 @@ class AutoExcludeUI(QMainWindow):
         """Retrieve exclusions from AutoExcludeManager and merge with project exclusions."""
         manager_recommendations = self.auto_exclude_manager.get_recommendations()
 
-        root_exclusions = set(self.project_context.settings_manager.get_root_exclusions())
+        root_exclusions = set(
+            self.project_context.settings_manager.get_root_exclusions()
+        )
         excluded_dirs = set(self.project_context.settings_manager.get_excluded_dirs())
         excluded_files = set(self.project_context.settings_manager.get_excluded_files())
 
         combined_exclusions = {
-            'root_exclusions': manager_recommendations.get('root_exclusions', set()) | root_exclusions,
-            'excluded_dirs': manager_recommendations.get('excluded_dirs', set()) | excluded_dirs,
-            'excluded_files': manager_recommendations.get('excluded_files', set()) | excluded_files
+            "root_exclusions": manager_recommendations.get("root_exclusions", set())
+            | root_exclusions,
+            "excluded_dirs": manager_recommendations.get("excluded_dirs", set())
+            | excluded_dirs,
+            "excluded_files": manager_recommendations.get("excluded_files", set())
+            | excluded_files,
         }
 
         return combined_exclusions
@@ -113,7 +146,9 @@ class AutoExcludeUI(QMainWindow):
     def apply_exclusions(self):
         try:
             self.auto_exclude_manager.apply_recommendations()
-            QMessageBox.information(self, "Exclusions Updated", "Exclusions have been successfully updated.")
+            QMessageBox.information(
+                self, "Exclusions Updated", "Exclusions have been successfully updated."
+            )
             self.close()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to apply exclusions: {str(e)}")

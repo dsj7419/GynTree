@@ -3,8 +3,8 @@
 GynTree is a powerful Python application designed to analyze and visualize complex directory structures, providing deep insights into your project's architecture. Whether you're managing a large codebase, organizing a media library, or just trying to understand the layout of a new project, GynTree has got you covered.
 
 | ![GynTree Logo](./assets/images/GynTree_logo.png) | ![GynTree Analysis View](./assets/images/GynTreeAnalysisView.png) | ![GynTree Directory View](./assets/images/GynTreeDirectoryView.png) |
-|:-------------------------------------------------:|:---------------------------------------------------------------:|:---------------------------------------------------------------:|
-|                                       | GynTree Analysis View                                           | GynTree Directory View                                          |
+| :-----------------------------------------------: | :---------------------------------------------------------------: | :-----------------------------------------------------------------: |
+|                                                   |                       GynTree Analysis View                       |                       GynTree Directory View                        |
 
 ## 🌟 Key Features
 
@@ -25,17 +25,17 @@ Ready to dive in? You have two options:
    Get the latest version of GynTree as a standalone application directly from the [Latest Release](https://github.com/dsj7419/GynTree/releases/latest).
 
 2. **Install from Source**:  
-   Check out our [Installation Guide](./assets/docs/INSTALL.md) to get GynTree up and running from the source code on your system in no time!
+   Check out our [Installation Guide](./assets/docs/guides/INSTALL.md) to get GynTree up and running from the source code on your system in no time!
 
 ## 📖 Documentation
 
-- [User Guide](./assets/docs/user_guide.md): Learn how to use GynTree effectively.
-- [Configuration](./assets/docs/configuration.md): Customize GynTree to suit your needs.
-- [API Reference](./assets/docs/api_reference.md): For developers looking to extend GynTree's functionality.
+- [User Guide](./assets/docs/guides/user_guide.md): Learn how to use GynTree effectively.
+- [Configuration](./assets/docs/guides/configuration.md): Customize GynTree to suit your needs.
+- [API Reference](./assets/docs/api/api_reference.md): For developers looking to extend GynTree's functionality.
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Whether it's bug reports, feature requests, or code contributions, check out our [Contributing Guide](./assets/docs/CONTRIBUTING.md) to get started.
+We welcome contributions from the community! Whether it's bug reports, feature requests, or code contributions, check out our [Contributing Guide](.github/CONTRIBUTING.md) to get started.
 
 ## 📜 License
 

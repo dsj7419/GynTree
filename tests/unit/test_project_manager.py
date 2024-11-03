@@ -1,12 +1,15 @@
-import pytest
-import os
 import json
+import logging
+import os
 from pathlib import Path
+
+import pytest
+
 from models.Project import Project
 from services.ProjectManager import ProjectManager
-import logging
 
 pytestmark = pytest.mark.unit
+
 
 class TestProjectManager:
     @pytest.fixture
@@ -32,7 +35,7 @@ class TestProjectManager:
             start_directory=str(project_dir),
             root_exclusions=["node_modules"],
             excluded_dirs=["dist"],
-            excluded_files=[".env"]
+            excluded_files=[".env"],
         )
 
     def test_projects_directory_creation(self, test_dir):
@@ -48,38 +51,43 @@ class TestProjectManager:
         # Set a non-existent directory path
         projects_dir = test_dir / "should_fail"
         ProjectManager.projects_dir = str(projects_dir)
-        
+
         # Create mock that always raises PermissionError
         def mock_makedirs(*args, **kwargs):
             raise PermissionError("Permission denied")
-        
+
         # Apply mock to os.makedirs
         monkeypatch.setattr(os, "makedirs", mock_makedirs)
-        
+
         # Test that initialization fails
         with pytest.raises(PermissionError):
             ProjectManager()
-            
+
     def test_save_project(self, project_manager, sample_project):
         """Test saving a project"""
         project_manager.save_project(sample_project)
-        
-        project_file = Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+
+        project_file = (
+            Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+        )
         assert project_file.exists()
-        
+
         with open(project_file) as f:
             data = json.load(f)
-            assert data['name'] == sample_project.name
-            assert data['start_directory'] == sample_project.start_directory
-            assert data['root_exclusions'] == sample_project.root_exclusions
-            assert data['excluded_dirs'] == sample_project.excluded_dirs
-            assert data['excluded_files'] == sample_project.excluded_files
+            assert data["name"] == sample_project.name
+            assert data["start_directory"] == sample_project.start_directory
+            assert data["root_exclusions"] == sample_project.root_exclusions
+            assert data["excluded_dirs"] == sample_project.excluded_dirs
+            assert data["excluded_files"] == sample_project.excluded_files
 
-    def test_save_project_permission_error(self, project_manager, sample_project, monkeypatch):
+    def test_save_project_permission_error(
+        self, project_manager, sample_project, monkeypatch
+    ):
         """Test error handling when saving project fails due to permissions"""
+
         def mock_open(*args, **kwargs):
             raise PermissionError("Permission denied")
-            
+
         monkeypatch.setattr("builtins.open", mock_open)
         with pytest.raises(PermissionError):
             project_manager.save_project(sample_project)
@@ -87,7 +95,7 @@ class TestProjectManager:
     def test_load_project(self, project_manager, sample_project):
         """Test loading a project"""
         project_manager.save_project(sample_project)
-        
+
         loaded_project = project_manager.load_project(sample_project.name)
         assert loaded_project is not None
         assert loaded_project.name == sample_project.name
@@ -99,10 +107,12 @@ class TestProjectManager:
     def test_load_project_json_error(self, project_manager, sample_project):
         """Test handling of corrupt JSON files"""
         # Create a corrupt JSON file
-        project_file = Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+        project_file = (
+            Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+        )
         project_file.parent.mkdir(parents=True, exist_ok=True)
         project_file.write_text("invalid json content")
-        
+
         loaded_project = project_manager.load_project(sample_project.name)
         assert loaded_project is None
 
@@ -115,18 +125,18 @@ class TestProjectManager:
         """Test listing all projects"""
         second_dir = test_dir / "second_directory"
         second_dir.mkdir(parents=True, exist_ok=True)
-        
+
         second_project = Project(
             name="second_project",
             start_directory=str(second_dir),
             root_exclusions=["vendor"],
             excluded_dirs=["build"],
-            excluded_files=["config.json"]
+            excluded_files=["config.json"],
         )
-        
+
         project_manager.save_project(sample_project)
         project_manager.save_project(second_project)
-        
+
         project_list = project_manager.list_projects()
         assert len(project_list) == 2
         assert "test_project" in project_list
@@ -134,9 +144,10 @@ class TestProjectManager:
 
     def test_list_projects_permission_error(self, project_manager, monkeypatch):
         """Test error handling when listing projects fails"""
+
         def mock_listdir(*args):
             raise PermissionError("Permission denied")
-            
+
         monkeypatch.setattr(os, "listdir", mock_listdir)
         project_list = project_manager.list_projects()
         assert project_list == []
@@ -145,18 +156,22 @@ class TestProjectManager:
         """Test deleting a project"""
         project_manager.save_project(sample_project)
         assert project_manager.delete_project(sample_project.name)
-        
-        project_file = Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+
+        project_file = (
+            Path(project_manager.projects_dir) / f"{sample_project.name}.json"
+        )
         assert not project_file.exists()
         assert sample_project.name not in project_manager.list_projects()
 
-    def test_delete_project_permission_error(self, project_manager, sample_project, monkeypatch):
+    def test_delete_project_permission_error(
+        self, project_manager, sample_project, monkeypatch
+    ):
         """Test error handling when deleting project fails"""
         project_manager.save_project(sample_project)
-        
+
         def mock_remove(*args):
             raise PermissionError("Permission denied")
-            
+
         monkeypatch.setattr(os, "remove", mock_remove)
         assert not project_manager.delete_project(sample_project.name)
 
@@ -167,16 +182,16 @@ class TestProjectManager:
     def test_save_and_update_project(self, project_manager, sample_project):
         """Test saving and then updating a project"""
         project_manager.save_project(sample_project)
-        
+
         updated_project = Project(
             name=sample_project.name,
             start_directory=sample_project.start_directory,
             root_exclusions=sample_project.root_exclusions + ["vendor"],
             excluded_dirs=sample_project.excluded_dirs + ["build"],
-            excluded_files=sample_project.excluded_files + ["config.json"]
+            excluded_files=sample_project.excluded_files + ["config.json"],
         )
         project_manager.save_project(updated_project)
-        
+
         loaded_project = project_manager.load_project(sample_project.name)
         assert loaded_project is not None
         assert loaded_project.root_exclusions == updated_project.root_exclusions
@@ -186,12 +201,12 @@ class TestProjectManager:
     def test_file_permissions(self, project_manager, sample_project, monkeypatch):
         """Test handling of file permission errors"""
         project_manager.save_project(sample_project)
-        
+
         def selective_mock_open(*args, **kwargs):
-            if 'r' in kwargs.get('mode', args[1] if len(args) > 1 else ''):
+            if "r" in kwargs.get("mode", args[1] if len(args) > 1 else ""):
                 raise PermissionError("Permission denied")
             return open(*args, **kwargs)
-        
+
         monkeypatch.setattr("builtins.open", selective_mock_open)
         loaded_project = project_manager.load_project(sample_project.name)
         assert loaded_project is None

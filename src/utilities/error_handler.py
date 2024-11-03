@@ -1,11 +1,13 @@
-import sys
 import logging
+import sys
 import traceback
 from functools import wraps
+
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 
 logger = logging.getLogger(__name__)
+
 
 class ErrorHandler(QObject):
     error_occurred = pyqtSignal(str, str)
@@ -18,8 +20,12 @@ class ErrorHandler(QObject):
     def global_exception_handler(cls, exc_type, exc_value, exc_traceback):
         """Handle uncaught exceptions globally"""
         error_msg = f"An unexpected error occurred:\n{exc_type.__name__}: {exc_value}"
-        detailed_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+        detailed_msg = "".join(
+            traceback.format_exception(exc_type, exc_value, exc_traceback)
+        )
+        logger.critical(
+            "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback)
+        )
         handler = cls()
         handler.error_occurred.emit("Critical Error", error_msg)
         logger.debug(f"Detailed error traceback:\n{detailed_msg}")
@@ -29,8 +35,10 @@ class ErrorHandler(QObject):
         """Show error dialog with the given title and message"""
         QTimer.singleShot(0, lambda: QMessageBox.critical(None, title, message))
 
+
 def handle_exception(func):
     """Decorator to handle exceptions in individual methods"""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -39,7 +47,9 @@ def handle_exception(func):
             logger.exception(f"Exception in {func.__name__}: {str(e)}")
             error_msg = f"An error occurred in {func.__name__}:\n{str(e)}"
             QMessageBox.critical(None, "Error", error_msg)
+
     return wrapper
+
 
 error_handler = ErrorHandler()
 sys.excepthook = ErrorHandler.global_exception_handler

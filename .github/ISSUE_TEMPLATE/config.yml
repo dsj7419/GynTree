@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+contact_links:
+
+name: GynTree Documentation
+url: https://github.com/dsj7419/gyntree/docs
+about: Please check our documentation before creating an issue
+name: GynTree Discussions
+url: https://github.com/dsj7419/gyntree/discussions
+about: For general questions and discussions about GynTree
+name: Security Policy
+url: https://github.com/dsj7419/gyntree/security/policy
+about: Please report security vulnerabilities here

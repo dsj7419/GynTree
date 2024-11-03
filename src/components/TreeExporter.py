@@ -1,22 +1,32 @@
 # GynTree: Implements functionality to export directory trees as images or ascii text.
-from PyQt5.QtWidgets import (QFileDialog, QMessageBox, QApplication, QTreeWidget,
-                           QTreeWidgetItem, QHeaderView, QTreeWidgetItemIterator)
-from PyQt5.QtCore import Qt, QSize, QMutex, QMutexLocker
-from PyQt5.QtGui import QPixmap, QPainter, QColor
-import os
 import logging
-import tempfile
-from pathlib import Path
+import os
 import shutil
+import tempfile
 import time
+from pathlib import Path
+
+from PyQt5.QtCore import QMutex, QMutexLocker, QSize, Qt
+from PyQt5.QtGui import QColor, QPainter, QPixmap
+from PyQt5.QtWidgets import (
+    QApplication,
+    QFileDialog,
+    QHeaderView,
+    QMessageBox,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QTreeWidgetItemIterator,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class TreeExporter:
     """
     Handles exporting directory trees as images or ascii text with proper
     error handling and resource management.
     """
+
     def __init__(self, tree_widget):
         """
         Initialize TreeExporter with proper error checking.
@@ -28,7 +38,7 @@ class TreeExporter:
         """
         if not isinstance(tree_widget, QTreeWidget):
             raise ValueError("TreeExporter requires a valid QTreeWidget instance")
-        
+
         self.tree_widget = tree_widget
         self._mutex = QMutex()  # For thread safety
         self._temp_files = []  # Track temporary resources
@@ -54,17 +64,12 @@ class TreeExporter:
             try:
                 if self.tree_widget.topLevelItemCount() == 0:
                     QMessageBox.warning(
-                        None,
-                        'Export Failed',
-                        'Cannot export an empty directory tree.'
+                        None, "Export Failed", "Cannot export an empty directory tree."
                     )
                     return False
 
                 file_name, _ = QFileDialog.getSaveFileName(
-                    None,
-                    'Export PNG',
-                    '',
-                    'PNG Files (*.png)'
+                    None, "Export PNG", "", "PNG Files (*.png)"
                 )
 
                 if not file_name:
@@ -84,17 +89,14 @@ class TreeExporter:
 
                 # Create and save pixmap
                 success = self._render_and_save_pixmap(
-                    temp_tree,
-                    total_width,
-                    total_height,
-                    file_name
+                    temp_tree, total_width, total_height, file_name
                 )
 
                 if success:
                     QMessageBox.information(
                         None,
-                        'Export Successful',
-                        f'Directory tree exported to {file_name}'
+                        "Export Successful",
+                        f"Directory tree exported to {file_name}",
                     )
                     return True
 
@@ -103,9 +105,7 @@ class TreeExporter:
             except Exception as e:
                 logger.error(f"Failed to export image: {str(e)}")
                 QMessageBox.critical(
-                    None,
-                    'Export Failed',
-                    'Failed to export directory tree as image'
+                    None, "Export Failed", "Failed to export directory tree as image"
                 )
                 return False
 
@@ -119,14 +119,15 @@ class TreeExporter:
         try:
             temp_tree = QTreeWidget()
             temp_tree.setColumnCount(self.tree_widget.columnCount())
-            temp_tree.setHeaderLabels([
-                self.tree_widget.headerItem().text(i)
-                for i in range(self.tree_widget.columnCount())
-            ])
+            temp_tree.setHeaderLabels(
+                [
+                    self.tree_widget.headerItem().text(i)
+                    for i in range(self.tree_widget.columnCount())
+                ]
+            )
 
             self._copy_items(
-                self.tree_widget.invisibleRootItem(),
-                temp_tree.invisibleRootItem()
+                self.tree_widget.invisibleRootItem(), temp_tree.invisibleRootItem()
             )
 
             temp_tree.expandAll()
@@ -189,8 +190,7 @@ class TreeExporter:
             # Create temporary file with a random suffix
             temp_suffix = os.urandom(6).hex()
             temp_file = tempfile.NamedTemporaryFile(
-                delete=False,
-                suffix=f'_{temp_suffix}.png'
+                delete=False, suffix=f"_{temp_suffix}.png"
             )
             self._temp_files.append(temp_file.name)
             temp_file.close()
@@ -214,11 +214,11 @@ class TreeExporter:
 
                     # Copy the file instead of moving it
                     shutil.copy2(temp_file.name, file_name)
-                    
+
                     # Only remove from tracking if successful
                     if temp_file.name in self._temp_files:
                         self._temp_files.remove(temp_file.name)
-                    
+
                     return True
 
                 except Exception as e:
@@ -226,7 +226,9 @@ class TreeExporter:
                         logger.warning(f"Retry {attempt + 1} failed: {str(e)}")
                         time.sleep(self._retry_delay)
                     else:
-                        logger.error(f"Failed to save pixmap after {self._max_retries} attempts: {str(e)}")
+                        logger.error(
+                            f"Failed to save pixmap after {self._max_retries} attempts: {str(e)}"
+                        )
                         return False
 
         except Exception as e:
@@ -271,10 +273,7 @@ class TreeExporter:
         with QMutexLocker(self._mutex):
             try:
                 file_name, _ = QFileDialog.getSaveFileName(
-                    None,
-                    'Export ASCII',
-                    '',
-                    'Text Files (*.txt)'
+                    None, "Export ASCII", "", "Text Files (*.txt)"
                 )
 
                 if not file_name:
@@ -282,14 +281,11 @@ class TreeExporter:
 
                 # Write to temporary file first
                 temp_file = tempfile.NamedTemporaryFile(
-                    mode='w',
-                    delete=False,
-                    suffix='.txt',
-                    encoding='utf-8'
+                    mode="w", delete=False, suffix=".txt", encoding="utf-8"
                 )
                 self._temp_files.append(temp_file.name)
 
-                with open(temp_file.name, 'w', encoding='utf-8') as f:
+                with open(temp_file.name, "w", encoding="utf-8") as f:
                     self._write_ascii_tree(f)
 
                 # Attempt to move to final location with retries
@@ -306,15 +302,15 @@ class TreeExporter:
 
                         # Copy the file instead of moving it
                         shutil.copy2(temp_file.name, file_name)
-                        
+
                         # Only remove from tracking if successful
                         if temp_file.name in self._temp_files:
                             self._temp_files.remove(temp_file.name)
 
                         QMessageBox.information(
                             None,
-                            'Export Successful',
-                            f'Directory tree exported to {file_name}'
+                            "Export Successful",
+                            f"Directory tree exported to {file_name}",
                         )
                         return True
 
@@ -323,20 +319,20 @@ class TreeExporter:
                             logger.warning(f"Retry {attempt + 1} failed: {str(e)}")
                             time.sleep(self._retry_delay)
                         else:
-                            logger.error(f"Failed to save ASCII file after {self._max_retries} attempts: {str(e)}")
+                            logger.error(
+                                f"Failed to save ASCII file after {self._max_retries} attempts: {str(e)}"
+                            )
                             QMessageBox.critical(
                                 None,
-                                'Export Failed',
-                                'Failed to export directory tree as ASCII'
+                                "Export Failed",
+                                "Failed to export directory tree as ASCII",
                             )
                             return False
 
             except Exception as e:
                 logger.error(f"Failed to export ASCII: {str(e)}")
                 QMessageBox.critical(
-                    None,
-                    'Export Failed',
-                    'Failed to export directory tree as ASCII'
+                    None, "Export Failed", "Failed to export directory tree as ASCII"
                 )
                 return False
             finally:
@@ -355,12 +351,14 @@ class TreeExporter:
             if self.tree_widget.topLevelItemCount() > 0:
                 root_item = self.tree_widget.topLevelItem(0)
                 file.write(f"{root_item.text(0)}\n")
-                
+
                 # Process children with proper indentation and connectors
                 last_indices = []
                 for i in range(root_item.childCount()):
                     is_last = i == root_item.childCount() - 1
-                    self._write_tree_item(file, root_item.child(i), "", is_last, last_indices)
+                    self._write_tree_item(
+                        file, root_item.child(i), "", is_last, last_indices
+                    )
 
         except Exception as e:
             logger.error(f"Failed to write ASCII tree: {str(e)}")
@@ -397,7 +395,7 @@ class TreeExporter:
                     item.child(i),
                     new_prefix,
                     child_is_last,
-                    last_indices + [is_last]
+                    last_indices + [is_last],
                 )
 
         except Exception as e:

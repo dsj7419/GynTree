@@ -1,11 +1,18 @@
+import os
 from abc import ABC, abstractmethod
 from typing import Dict, Set
-import os
+
 from services.ProjectTypeDetector import ProjectTypeDetector
 from services.SettingsManager import SettingsManager
 
+
 class ExclusionService(ABC):
-    def __init__(self, start_directory: str, project_type_detector: ProjectTypeDetector, settings_manager: SettingsManager):
+    def __init__(
+        self,
+        start_directory: str,
+        project_type_detector: ProjectTypeDetector,
+        settings_manager: SettingsManager,
+    ):
         self.start_directory = start_directory
         self.project_type_detector = project_type_detector
         self.settings_manager = settings_manager
@@ -22,5 +29,7 @@ class ExclusionService(ABC):
 
     def walk_directory(self):
         for root, dirs, files in os.walk(self.start_directory):
-            dirs[:] = [d for d in dirs if not self.should_exclude(os.path.join(root, d))]
+            dirs[:] = [
+                d for d in dirs if not self.should_exclude(os.path.join(root, d))
+            ]
             yield root, dirs, files

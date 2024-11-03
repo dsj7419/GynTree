@@ -1,13 +1,25 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QTreeWidget, QPushButton,
-                            QHBoxLayout, QTreeWidgetItem, QHeaderView, QMessageBox)
+import logging
+
+from PyQt5.QtCore import QSize, Qt, pyqtSlot
 from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtCore import Qt, QSize, pyqtSlot
+from PyQt5.QtWidgets import (
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
 from components.TreeExporter import TreeExporter
 from utilities.resource_path import get_resource_path
 from utilities.theme_manager import ThemeManager
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 class DirectoryTreeUI(QWidget):
     def __init__(self, controller, theme_manager: ThemeManager):
@@ -52,7 +64,7 @@ class DirectoryTreeUI(QWidget):
             self._setup_exporter()
 
             self.setLayout(main_layout)
-            self.setWindowTitle('Directory Tree')
+            self.setWindowTitle("Directory Tree")
             self.setGeometry(300, 150, 800, 600)
             self.apply_theme()
 
@@ -63,16 +75,16 @@ class DirectoryTreeUI(QWidget):
     def _create_header_layout(self):
         """Create and return the header layout with buttons"""
         header_layout = QHBoxLayout()
-        
-        title_label = QLabel('Directory Tree', font=QFont('Arial', 24, QFont.Bold))
+
+        title_label = QLabel("Directory Tree", font=QFont("Arial", 24, QFont.Bold))
         header_layout.addWidget(title_label)
 
         # Create buttons
         buttons = {
-            'Collapse All': self._handle_collapse_all,
-            'Expand All': self._handle_expand_all,
-            'Export PNG': self._handle_export_png,
-            'Export ASCII': self._handle_export_ascii
+            "Collapse All": self._handle_collapse_all,
+            "Expand All": self._handle_expand_all,
+            "Export PNG": self._handle_export_png,
+            "Export ASCII": self._handle_export_ascii,
         }
 
         for text, handler in buttons.items():
@@ -86,7 +98,7 @@ class DirectoryTreeUI(QWidget):
     def _setup_tree_widget(self):
         """Set up the tree widget with proper configuration"""
         self.tree_widget = QTreeWidget()
-        self.tree_widget.setHeaderLabels(['Name'])
+        self.tree_widget.setHeaderLabels(["Name"])
         self.tree_widget.setColumnWidth(0, 300)
         self.tree_widget.setAlternatingRowColors(True)
         self.tree_widget.setIconSize(QSize(20, 20))
@@ -140,7 +152,7 @@ class DirectoryTreeUI(QWidget):
     def create_styled_button(self, text):
         """Create a styled button with error handling"""
         btn = QPushButton(text)
-        btn.setFont(QFont('Arial', 14))
+        btn.setFont(QFont("Arial", 14))
         return btn
 
     def update_tree(self, directory_structure):
@@ -149,7 +161,9 @@ class DirectoryTreeUI(QWidget):
             self.directory_structure = directory_structure
             self.tree_widget.clear()
             if directory_structure:
-                self._populate_tree(self.tree_widget.invisibleRootItem(), self.directory_structure)
+                self._populate_tree(
+                    self.tree_widget.invisibleRootItem(), self.directory_structure
+                )
                 self.tree_widget.expandAll()
         except Exception as e:
             logger.error(f"Error updating tree: {str(e)}")
@@ -159,15 +173,15 @@ class DirectoryTreeUI(QWidget):
         """Populate tree with proper error handling"""
         try:
             item = QTreeWidgetItem(parent)
-            item.setText(0, data['name'])
-            
+            item.setText(0, data["name"])
+
             # Set icon based on type with null check
-            icon = self.folder_icon if data['type'] == 'directory' else self.file_icon
+            icon = self.folder_icon if data["type"] == "directory" else self.file_icon
             if not icon.isNull():
                 item.setIcon(0, icon)
 
-            if 'children' in data and isinstance(data['children'], list):
-                for child in data['children']:
+            if "children" in data and isinstance(data["children"], list):
+                for child in data["children"]:
                     self._populate_tree(item, child)
         except Exception as e:
             logger.error(f"Error populating tree item: {str(e)}")

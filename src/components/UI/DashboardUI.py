@@ -1,20 +1,31 @@
+import logging
 import os
-from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QLabel, 
-                           QStatusBar, QHBoxLayout, QPushButton, QMessageBox)
-from PyQt5.QtGui import QIcon, QFont, QPixmap
+
 from PyQt5.QtCore import Qt, pyqtSignal
-from components.UI.ProjectUI import ProjectUI
+from PyQt5.QtGui import QFont, QIcon, QPixmap
+from PyQt5.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
+
+from components.UI.animated_toggle import AnimatedToggle
 from components.UI.AutoExcludeUI import AutoExcludeUI
-from components.UI.ResultUI import ResultUI
 from components.UI.DirectoryTreeUI import DirectoryTreeUI
 from components.UI.ExclusionsManagerUI import ExclusionsManagerUI
 from components.UI.ProjectManagementUI import ProjectManagementUI
-from components.UI.animated_toggle import AnimatedToggle
+from components.UI.ProjectUI import ProjectUI
+from components.UI.ResultUI import ResultUI
 from utilities.resource_path import get_resource_path
 from utilities.theme_manager import ThemeManager
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 class DashboardUI(QMainWindow):
     project_created = pyqtSignal(object)
@@ -37,8 +48,8 @@ class DashboardUI(QMainWindow):
 
     def initUI(self):
         """Initialize the UI components"""
-        self.setWindowTitle('GynTree Dashboard')
-        icon_path = get_resource_path('assets/images/GynTree_logo.ico')
+        self.setWindowTitle("GynTree Dashboard")
+        icon_path = get_resource_path("assets/images/GynTree_logo.ico")
         self.setWindowIcon(QIcon(icon_path))
 
         # Create central widget and main layout
@@ -51,12 +62,11 @@ class DashboardUI(QMainWindow):
         # Theme toggle setup - Put this first to ensure it's always visible
         theme_toggle_layout = QHBoxLayout()
         self.theme_toggle = AnimatedToggle(
-            checked_color="#FFB000",
-            pulse_checked_color="#44FFB000"
+            checked_color="#FFB000", pulse_checked_color="#44FFB000"
         )
         self.theme_toggle.setFixedSize(self.theme_toggle.sizeHint())
         current_theme = self.theme_manager.get_current_theme()
-        self.theme_toggle.setChecked(current_theme == 'dark')
+        self.theme_toggle.setChecked(current_theme == "dark")
         self.theme_toggle.stateChanged.connect(self.on_theme_toggle_changed)
         self.theme_toggle.setVisible(True)
         self.theme_toggle.setEnabled(True)
@@ -67,28 +77,32 @@ class DashboardUI(QMainWindow):
         # Logo setup
         header_layout = QHBoxLayout()
         logo_label = QLabel()
-        logo_path = get_resource_path('assets/images/gyntree_logo.png')
+        logo_path = get_resource_path("assets/images/gyntree_logo.png")
         if os.path.exists(logo_path):
             logo_pixmap = QPixmap(logo_path)
-            logo_label.setPixmap(logo_pixmap.scaled(128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_label.setPixmap(
+                logo_pixmap.scaled(
+                    128, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+            )
         else:
             logger.warning(f"Logo file not found at {logo_path}")
 
         # Welcome label setup
-        self._welcome_label = QLabel('Welcome to GynTree!')
-        self._welcome_label.setFont(QFont('Arial', 24, QFont.Bold))
-        
+        self._welcome_label = QLabel("Welcome to GynTree!")
+        self._welcome_label.setFont(QFont("Arial", 24, QFont.Bold))
+
         header_layout.addWidget(logo_label)
         header_layout.addWidget(self._welcome_label)
         header_layout.setAlignment(Qt.AlignCenter)
         main_layout.addLayout(header_layout)
 
         # Button setup
-        self.projects_btn = self.create_styled_button('Create New/Open a Project')
-        self.manage_projects_btn = self.create_styled_button('Manage Projects')
-        self.manage_exclusions_btn = self.create_styled_button('Manage Exclusions')
-        self.analyze_directory_btn = self.create_styled_button('Analyze Directory')
-        self.view_directory_tree_btn = self.create_styled_button('View Directory Tree')
+        self.projects_btn = self.create_styled_button("Create New/Open a Project")
+        self.manage_projects_btn = self.create_styled_button("Manage Projects")
+        self.manage_exclusions_btn = self.create_styled_button("Manage Exclusions")
+        self.analyze_directory_btn = self.create_styled_button("Analyze Directory")
+        self.view_directory_tree_btn = self.create_styled_button("View Directory Tree")
 
         # Initialize button states
         self.manage_exclusions_btn.setEnabled(False)
@@ -96,8 +110,13 @@ class DashboardUI(QMainWindow):
         self.view_directory_tree_btn.setEnabled(False)
 
         # Add buttons to layout
-        for btn in [self.projects_btn, self.manage_projects_btn, self.manage_exclusions_btn,
-                   self.analyze_directory_btn, self.view_directory_tree_btn]:
+        for btn in [
+            self.projects_btn,
+            self.manage_projects_btn,
+            self.manage_exclusions_btn,
+            self.analyze_directory_btn,
+            self.view_directory_tree_btn,
+        ]:
             main_layout.addWidget(btn)
 
         # Connect button signals
@@ -105,7 +124,9 @@ class DashboardUI(QMainWindow):
         self.manage_projects_btn.clicked.connect(self.controller.manage_projects)
         self.manage_exclusions_btn.clicked.connect(self.controller.manage_exclusions)
         self.analyze_directory_btn.clicked.connect(self.controller.analyze_directory)
-        self.view_directory_tree_btn.clicked.connect(self.controller.view_directory_tree)
+        self.view_directory_tree_btn.clicked.connect(
+            self.controller.view_directory_tree
+        )
 
         # Status bar setup
         self.status_bar = QStatusBar(self)
@@ -114,21 +135,21 @@ class DashboardUI(QMainWindow):
 
         # Set window properties
         self.setGeometry(300, 300, 800, 600)
-        
+
         # Apply initial theme
         self.theme_manager.apply_theme(self)
 
     def create_styled_button(self, text):
         """Create a styled button with consistent formatting"""
         btn = QPushButton(text)
-        font = QFont('Arial')
+        font = QFont("Arial")
         font.setPointSize(14)
         btn.setFont(font)
         return btn
 
     def on_theme_toggle_changed(self, state):
         """Handle theme toggle state changes"""
-        new_theme = 'dark' if state else 'light'
+        new_theme = "dark" if state else "light"
         self.theme_manager.set_theme(new_theme)
         self.theme_manager.apply_theme(self)
         self.theme_changed.emit(new_theme)
@@ -136,7 +157,7 @@ class DashboardUI(QMainWindow):
     def toggle_theme(self):
         """Toggle the current theme"""
         new_theme = self.theme_manager.toggle_theme()
-        self.theme_toggle.setChecked(new_theme == 'dark')
+        self.theme_toggle.setChecked(new_theme == "dark")
         self.theme_changed.emit(new_theme)
 
     def show_dashboard(self):
@@ -170,32 +191,45 @@ class DashboardUI(QMainWindow):
         logger.info(f"Project creation signal received: {project.name}")
         self.controller.on_project_created(project)
         self.update_project_info(project)
-        
+
     def on_project_loaded(self, project):
         """Handle project loaded event"""
         self.update_project_info(project)
 
-    def show_auto_exclude_ui(self, auto_exclude_manager, settings_manager, formatted_recommendations, project_context):
+    def show_auto_exclude_ui(
+        self,
+        auto_exclude_manager,
+        settings_manager,
+        formatted_recommendations,
+        project_context,
+    ):
         """Show the auto exclude UI window"""
-        mock_exclude_ui = getattr(self, '_mock_auto_exclude_ui', None)
+        mock_exclude_ui = getattr(self, "_mock_auto_exclude_ui", None)
         if mock_exclude_ui:
             mock_exclude_ui.show()
             return mock_exclude_ui
-        
-        self.auto_exclude_ui = AutoExcludeUI(auto_exclude_manager, settings_manager, formatted_recommendations, project_context)
+
+        self.auto_exclude_ui = AutoExcludeUI(
+            auto_exclude_manager,
+            settings_manager,
+            formatted_recommendations,
+            project_context,
+        )
         self.ui_components.append(self.auto_exclude_ui)
         self.auto_exclude_ui.show()
         return self.auto_exclude_ui
 
     def show_result(self, directory_analyzer):
         """Show the results UI window"""
-        mock_result_ui = getattr(self, '_mock_result_ui', None)
+        mock_result_ui = getattr(self, "_mock_result_ui", None)
         if mock_result_ui:
             mock_result_ui.show()
             return mock_result_ui
-            
+
         if self.controller.project_controller.project_context:
-            self.result_ui = ResultUI(self.controller, self.theme_manager, directory_analyzer)
+            self.result_ui = ResultUI(
+                self.controller, self.theme_manager, directory_analyzer
+            )
             self.ui_components.append(self.result_ui)
             self.result_ui.show()
             return self.result_ui
@@ -203,30 +237,38 @@ class DashboardUI(QMainWindow):
 
     def manage_exclusions(self, settings_manager):
         """Show the exclusions manager UI"""
-        mock_exclusions_ui = getattr(self, '_mock_exclusions_ui', None)
+        mock_exclusions_ui = getattr(self, "_mock_exclusions_ui", None)
         if mock_exclusions_ui:
             mock_exclusions_ui.show()
             return mock_exclusions_ui
-            
+
         if self.controller.project_controller.project_context:
-            self.exclusions_ui = ExclusionsManagerUI(self.controller, self.theme_manager, settings_manager)
+            self.exclusions_ui = ExclusionsManagerUI(
+                self.controller, self.theme_manager, settings_manager
+            )
             self.ui_components.append(self.exclusions_ui)
             self.exclusions_ui.show()
             return self.exclusions_ui
-            
-        QMessageBox.warning(self, "No Project", "Please load or create a project before managing exclusions.")
+
+        QMessageBox.warning(
+            self,
+            "No Project",
+            "Please load or create a project before managing exclusions.",
+        )
         return None
 
     def view_directory_tree_ui(self, result):
         """Show the directory tree UI"""
-        mock_tree_ui = getattr(self, '_mock_directory_tree_ui', None)
+        mock_tree_ui = getattr(self, "_mock_directory_tree_ui", None)
         if mock_tree_ui:
             mock_tree_ui.update_tree(result)
             mock_tree_ui.show()
             return mock_tree_ui
-            
+
         if not self.directory_tree_ui:
-            self.directory_tree_ui = DirectoryTreeUI(self.controller, self.theme_manager)
+            self.directory_tree_ui = DirectoryTreeUI(
+                self.controller, self.theme_manager
+            )
         self.directory_tree_ui.update_tree(result)
         self.ui_components.append(self.directory_tree_ui)
         self.directory_tree_ui.show()
@@ -236,7 +278,7 @@ class DashboardUI(QMainWindow):
         """Update the UI with current project information"""
         self.setWindowTitle(f"GynTree - {project.name}")
         status_msg = f"Current project: {project.name}, Start directory: {project.start_directory}"
-        if hasattr(project, 'status'):
+        if hasattr(project, "status"):
             status_msg = f"{status_msg} - {project.status}"
         self.status_bar.showMessage(status_msg)
         self.enable_project_actions()
@@ -249,19 +291,19 @@ class DashboardUI(QMainWindow):
 
     def clear_directory_tree(self):
         """Clear the directory tree view"""
-        if hasattr(self, 'directory_tree_view'):
+        if hasattr(self, "directory_tree_view"):
             self.directory_tree_view.clear()
         logger.debug("Directory tree cleared")
 
     def clear_analysis(self):
         """Clear the analysis results"""
-        if hasattr(self, 'analysis_result_view'):
+        if hasattr(self, "analysis_result_view"):
             self.analysis_result_view.clear()
         logger.debug("Analysis results cleared")
 
     def clear_exclusions(self):
         """Clear the exclusions list"""
-        if hasattr(self, 'exclusions_list_view'):
+        if hasattr(self, "exclusions_list_view"):
             self.exclusions_list_view.clear()
         logger.debug("Exclusions list cleared")
 
@@ -273,7 +315,7 @@ class DashboardUI(QMainWindow):
         """Handle window close event and cleanup"""
         for component in self.ui_components:
             try:
-                if component and hasattr(component, 'close'):
+                if component and hasattr(component, "close"):
                     component.close()
             except Exception as e:
                 logger.debug(f"Non-critical UI component cleanup warning: {e}")

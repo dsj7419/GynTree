@@ -1,19 +1,33 @@
-from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel, QPushButton,
-                           QFileDialog, QWidget, QHBoxLayout, QTableWidget,
-                           QTableWidgetItem, QHeaderView, QApplication,
-                           QSplitter, QDesktopWidget)
-from PyQt5.QtGui import QIcon, QFont
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 import csv
-from utilities.resource_path import get_resource_path
-from utilities.theme_manager import ThemeManager
 import logging
 import os
-import tempfile
 import shutil
+import tempfile
 import time
 
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtWidgets import (
+    QApplication,
+    QDesktopWidget,
+    QFileDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from utilities.resource_path import get_resource_path
+from utilities.theme_manager import ThemeManager
+
 logger = logging.getLogger(__name__)
+
 
 class ResultUI(QMainWindow):
     # Define signals for operations
@@ -49,8 +63,8 @@ class ResultUI(QMainWindow):
         self._temp_files.clear()
 
     def init_ui(self):
-        self.setWindowTitle('Analysis Results')
-        self.setWindowIcon(QIcon(get_resource_path('assets/images/GynTree_logo.ico')))
+        self.setWindowTitle("Analysis Results")
+        self.setWindowIcon(QIcon(get_resource_path("assets/images/GynTree_logo.ico")))
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -58,15 +72,15 @@ class ResultUI(QMainWindow):
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(20)
 
-        title = QLabel('Analysis Results')
-        title.setFont(QFont('Arial', 24, QFont.Bold))
+        title = QLabel("Analysis Results")
+        title.setFont(QFont("Arial", 24, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
         title.setMaximumHeight(40)
         layout.addWidget(title)
 
         self.result_table = QTableWidget()
         self.result_table.setColumnCount(2)
-        self.result_table.setHorizontalHeaderLabels(['Path', 'Description'])
+        self.result_table.setHorizontalHeaderLabels(["Path", "Description"])
         header = self.result_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.Interactive)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
@@ -79,16 +93,16 @@ class ResultUI(QMainWindow):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(15)
 
-        copy_button = self.create_styled_button('Copy to Clipboard')
+        copy_button = self.create_styled_button("Copy to Clipboard")
         copy_button.clicked.connect(self.copy_to_clipboard)
         button_layout.addWidget(copy_button)
 
-        save_txt_button = self.create_styled_button('Save as TXT')
-        save_txt_button.clicked.connect(lambda: self.save_file('txt'))
+        save_txt_button = self.create_styled_button("Save as TXT")
+        save_txt_button.clicked.connect(lambda: self.save_file("txt"))
         button_layout.addWidget(save_txt_button)
 
-        save_csv_button = self.create_styled_button('Save as CSV')
-        save_csv_button.clicked.connect(lambda: self.save_file('csv'))
+        save_csv_button = self.create_styled_button("Save as CSV")
+        save_csv_button.clicked.connect(lambda: self.save_file("csv"))
         button_layout.addWidget(save_csv_button)
 
         layout.addLayout(button_layout)
@@ -96,14 +110,16 @@ class ResultUI(QMainWindow):
         screen = QDesktopWidget().screenGeometry()
         width = int(screen.width() * 0.8)
         height = int(screen.height() * 0.8)
-        self.setGeometry(int(screen.width() * 0.1), int(screen.height() * 0.1), width, height)
+        self.setGeometry(
+            int(screen.width() * 0.1), int(screen.height() * 0.1), width, height
+        )
 
         self.apply_theme()
 
     def create_styled_button(self, text):
         """Helper method to create styled buttons."""
         btn = QPushButton(text)
-        btn.setFont(QFont('Arial', 14))
+        btn.setFont(QFont("Arial", 14))
         return btn
 
     def update_result(self):
@@ -111,33 +127,37 @@ class ResultUI(QMainWindow):
         try:
             # Get data from the directory analyzer passed during initialization
             self.result_data = self.directory_analyzer.get_flat_structure()
-            
+
             # Clear existing table data
             self.result_table.setRowCount(0)
-            
+
             # Set the row count before populating
             self.result_table.setRowCount(len(self.result_data))
-            
+
             # Populate table
             max_path_width = 0
             for row, item in enumerate(self.result_data):
-                path_item = QTableWidgetItem(item['path'])
-                desc_item = QTableWidgetItem(item['description'])
+                path_item = QTableWidgetItem(item["path"])
+                desc_item = QTableWidgetItem(item["description"])
                 self.result_table.setItem(row, 0, path_item)
                 self.result_table.setItem(row, 1, desc_item)
-                max_path_width = max(max_path_width, self.result_table.fontMetrics().width(item['path']))
+                max_path_width = max(
+                    max_path_width, self.result_table.fontMetrics().width(item["path"])
+                )
 
             padding = 50
             self.result_table.setColumnWidth(0, max_path_width + padding)
-            self.result_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+            self.result_table.horizontalHeader().setSectionResizeMode(
+                1, QHeaderView.Stretch
+            )
             self.result_table.resizeRowsToContents()
-            
+
             # Ensure column widths are properly adjusted
             QTimer.singleShot(0, self.adjust_column_widths)
-            
+
             # Emit signal after successful update
             self.resultUpdated.emit()
-            
+
         except Exception as e:
             logger.error(f"Error updating results: {str(e)}")
             self.error.emit(f"Failed to update results: {str(e)}")
@@ -176,19 +196,13 @@ class ResultUI(QMainWindow):
                 logger.warning("No data to save")
                 return
 
-            if file_type == 'txt':
+            if file_type == "txt":
                 file_name, _ = QFileDialog.getSaveFileName(
-                    self,
-                    "Save TXT",
-                    "",
-                    "Text Files (*.txt)"
+                    self, "Save TXT", "", "Text Files (*.txt)"
                 )
-            elif file_type == 'csv':
+            elif file_type == "csv":
                 file_name, _ = QFileDialog.getSaveFileName(
-                    self,
-                    "Save CSV",
-                    "",
-                    "CSV Files (*.csv)"
+                    self, "Save CSV", "", "CSV Files (*.csv)"
                 )
             else:
                 logger.error(f"Invalid file type: {file_type}")
@@ -200,24 +214,24 @@ class ResultUI(QMainWindow):
             # Create temporary file
             temp_suffix = os.urandom(6).hex()
             temp_file = tempfile.NamedTemporaryFile(
-                mode='w',
+                mode="w",
                 delete=False,
-                suffix=f'_{temp_suffix}.{file_type}',
-                encoding='utf-8',
-                newline=''
+                suffix=f"_{temp_suffix}.{file_type}",
+                encoding="utf-8",
+                newline="",
             )
             self._temp_files.append(temp_file.name)
 
             # Write to temporary file
-            with open(temp_file.name, 'w', encoding='utf-8', newline='') as file:
-                if file_type == 'txt':
+            with open(temp_file.name, "w", encoding="utf-8", newline="") as file:
+                if file_type == "txt":
                     for item in self.result_data:
                         file.write(f"{item['path']}: {item['description']}\n")
-                elif file_type == 'csv':
+                elif file_type == "csv":
                     writer = csv.writer(file)
-                    writer.writerow(['Path', 'Description'])
+                    writer.writerow(["Path", "Description"])
                     for item in self.result_data:
-                        writer.writerow([item['path'], item['description']])
+                        writer.writerow([item["path"], item["description"]])
 
             # Attempt to move to final location with retries
             for attempt in range(self._max_retries):
@@ -233,7 +247,7 @@ class ResultUI(QMainWindow):
 
                     # Copy the file instead of moving it
                     shutil.copy2(temp_file.name, file_name)
-                    
+
                     # Only remove from tracking if successful
                     if temp_file.name in self._temp_files:
                         self._temp_files.remove(temp_file.name)
