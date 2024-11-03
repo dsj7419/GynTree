@@ -11,7 +11,7 @@ pytest-html==4.1.1
 pytest-metadata==3.1.1
 pytest-mock==3.14.0
 pytest-xdist==3.6.1
-coverage==7.6.1
+coverage==7.6.4
 
 # Build and distribution
 build==1.0.3
