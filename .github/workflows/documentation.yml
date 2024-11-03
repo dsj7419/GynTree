@@ -1,5 +1,4 @@
 name: Documentation
-
 on:
   push:
     paths:
@@ -7,6 +6,7 @@ on:
       - "**.md"
       - "mkdocs.yml"
       - "requirements-docs.txt"
+      - "scripts/check_docs.py"
     branches:
       - main
   pull_request:
@@ -15,6 +15,7 @@ on:
       - "**.md"
       - "mkdocs.yml"
       - "requirements-docs.txt"
+      - "scripts/check_docs.py"
   workflow_dispatch:
 
 jobs:
@@ -40,11 +41,16 @@ jobs:
         run: |
           python scripts/check_docs.py
 
+      - name: Create site directory
+        run: mkdir -p site
+
+      - name: Ensure js directory exists
+        run: |
+          mkdir -p docs/js
+
       - name: Build documentation
         run: |
           mkdocs build --strict --verbose
-        env:
-          GOOGLE_ANALYTICS_KEY: ${{ secrets.GOOGLE_ANALYTICS_KEY }}
 
       - name: Deploy Documentation
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -60,5 +66,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: documentation
-          path: site
+          path: site/
+          if-no-files-found: warn
           retention-days: 14

@@ -27,4 +27,4 @@ GynTree is a Python-based tool for analyzing and visualizing directory structure
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+This project is licensed under the MIT License - see the [GitHub repository](https://github.com/dsj7419/GynTree/blob/main/LICENSE) file for details.
