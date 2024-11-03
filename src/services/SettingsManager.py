@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class SettingsManager:
-    config_dir: str = "config"  # Class variable for config directory
+    config_dir: str = "config" 
 
     def __init__(self, project: Project):
         """
@@ -37,8 +37,10 @@ class SettingsManager:
         settings = {}
         try:
             if os.path.exists(self.config_path):
-                with open(self.config_path, "r") as file:
-                    settings = json.load(file)
+                with open(self.config_path, "r", encoding='utf-8') as file:
+                    file_settings = json.load(file)
+                    if file_settings:  # Only update if we got valid settings
+                        settings = file_settings
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.warning(f"Could not load settings file: {e}")
 
@@ -56,13 +58,16 @@ class SettingsManager:
             "theme_preference": "light",
         }
 
-        # Merge with existing settings, preserving defaults if keys don't exist
+        # Only use defaults for keys that don't exist in settings
         for key, default_value in default_settings.items():
-            if key not in settings or not settings[key]:
+            if key not in settings:
                 settings[key] = default_value
             elif isinstance(default_value, list) and isinstance(settings[key], list):
-                # Ensure unique values in lists while preserving order
-                settings[key] = list(dict.fromkeys(settings[key] + default_value))
+                # For lists, merge while preserving order and uniqueness
+                existing_items = settings[key]
+                new_items = default_value
+                merged = list(dict.fromkeys(existing_items + new_items))
+                settings[key] = merged
 
         return settings
 

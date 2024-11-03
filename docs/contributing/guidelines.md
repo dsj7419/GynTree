@@ -69,6 +69,71 @@ All Python code must adhere to the [PEP 8 style guide](https://www.python.org/de
 - Use [Markdown](https://daringfireball.net/projects/markdown/) for documentation.
 - Reference function names, module names, and classes within backticks.
 
+### Dependency Management
+
+We maintain three separate requirement files to keep our dependencies organized:
+
+- `requirements.txt` - Core application dependencies required to run GynTree
+- `requirements-dev.txt` - Development dependencies (testing, linting, etc.)
+- `requirements-docs.txt` - Documentation-related dependencies
+
+#### Adding Dependencies
+
+When adding new dependencies:
+
+1. Determine which requirements file is appropriate:
+
+   - Runtime dependencies → `requirements.txt`
+   - Development tools → `requirements-dev.txt`
+   - Documentation tools → `requirements-docs.txt`
+
+2. Add the dependency with an exact version:
+
+```bash
+# For runtime dependencies
+pip install package_name
+echo "package_name==x.y.z" >> requirements.txt
+
+# For development dependencies
+pip install package_name
+echo "package_name==x.y.z" >> requirements-dev.txt
+```
+
+1. Document why the dependency is needed in a comment above the requirement
+
+#### Development Environment Setup
+
+To set up your development environment:
+
+1. Clone the repository
+2. Run the setup script:
+
+```bash
+python setup_dev.py
+```
+
+1. Activate the virtual environment:
+
+- Windows: `.venv\Scripts\activate`
+- Unix/MacOS: `source .venv/bin/activate`
+
+#### Dependency Guidelines
+
+1. Always pin dependency versions (use `==` instead of `>=`)
+2. Minimize the number of dependencies
+3. Regular security updates are encouraged
+4. Document non-obvious dependencies
+5. Test with the minimum required versions of dependencies
+
+#### Updating Dependencies
+
+Before submitting a PR that updates dependencies:
+
+1. Document the reason for the update
+2. Test the application with the new versions
+3. Update all affected requirements files
+4. Include dependency updates in their own commits
+
 ## Additional Notes
 
 ### Issue and Pull Request Labels

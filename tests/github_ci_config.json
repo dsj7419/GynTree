@@ -1,0 +1,39 @@
+{
+  "test_options": {
+    "parallel": true,
+    "html_report": true,
+    "coverage": true,
+    "timeout": 300,
+    "test_categories": {
+      "unit": true,
+      "integration": true,
+      "functional": true,
+      "performance": false,
+      "gui": true
+    },
+    "test_filters": {
+      "skip_slow": true,
+      "skip_windows": "runner.os != 'Windows'"
+    },
+    "reporting": {
+      "coverage_threshold": 80,
+      "junit_report": true,
+      "html_report": true
+    }
+  },
+  "environment": {
+    "ci_mode": true,
+    "debug": true,
+    "qt_wait_timeout": 2000,
+    "cleanup_timeout": 30,
+    "memory_limit": "2G"
+  },
+  "artifacts": {
+    "save_patterns": [
+      "tests/reports/coverage/**",
+      "tests/reports/html/**",
+      "tests/reports/logs/**"
+    ],
+    "retention_days": 14
+  }
+}

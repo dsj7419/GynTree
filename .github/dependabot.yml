@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday" 
+      time: "09:00"  
     open-pull-requests-limit: 10
     target-branch: "main"
     labels:
@@ -11,12 +13,55 @@ updates:
       - "pip"
     reviewers:
       - "dsj7419"
+    groups:
+
+      test-dependencies:
+        patterns:
+          - "pytest*"
+          - "coverage"
+          - "flake8"
+          - "black"
+          - "mypy"
+
+      gui-dependencies:
+        patterns:
+          - "PyQt5*"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+    ignore:
+      - dependency-name: "PyQt5*"
+        update-types: ["version-update:semver-major"]  
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+
+  - package-ecosystem: "pip"
+    directory: "/docs"
+    schedule:
+      interval: "monthly" s
+    labels:
+      - "dependencies"
+      - "documentation"
+    groups:
+      docs-dependencies:
+        patterns:
+          - "mkdocs*"
+          - "*-material*"
