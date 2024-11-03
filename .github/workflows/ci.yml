@@ -100,3 +100,22 @@ jobs:
           files: ./tests/reports/coverage/coverage.xml
           fail_ci_if_error: true
           verbose: true
+
+      - name: Create Test Report Directory
+      if: always()
+      run: mkdir -p tests/reports
+
+      - name: Generate Test Summary
+        if: always()
+        run: |
+          echo "{\"success\": ${{ job.status == 'success' }}, \"timestamp\": \"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}" > tests/reports/latest_results.json
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            tests/reports/**/*
+          retention-days: 14
+          if-no-files-found: warn

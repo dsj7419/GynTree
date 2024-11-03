@@ -15,6 +15,7 @@ on:
       - "**.md"
       - "mkdocs.yml"
       - "requirements-docs.txt"
+  workflow_dispatch: # Allow manual triggers
 
 jobs:
   build:
@@ -22,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for proper versioning
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -35,25 +36,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-docs.txt
 
-      - name: Check documentation links
+      - name: Install git
         run: |
-          mkdocs build --strict
+          sudo apt-get update
+          sudo apt-get install -y git
 
-      - name: Deploy Documentation
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Build documentation
+        run: mkdocs build --strict --verbose
+
+      - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: peaceiris/actions-gh-pages@v3
+        run: |
+          mkdocs gh-deploy --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload documentation artifact
+        if: always()
+        uses: actions/upload-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-          commit_message: |
-            Deploy documentation updates
-
-            Triggered by ${{ github.sha }}
-          user_name: "github-actions[bot]"
-          user_email: "github-actions[bot]@users.noreply.github.com"
-          full_commit_message: |
-            Deploy documentation updates
-
-            Triggered by ${{ github.sha }}
-            Commit messages:
-            ${{ github.event.commits[0].message }}
+          name: documentation
+          path: site
+          retention-days: 14

@@ -1,8 +1,9 @@
 import logging
 
 import pytest
-from PyQt5.QtCore import QMetaObject, Qt, QTimer
-from PyQt5.QtWidgets import QMessageBox, QWidget
+from typing import Any, Dict
+from PyQt5.QtWidgets import QWidget
+from unittest.mock import MagicMock, patch
 
 from controllers.UIController import UIController
 
