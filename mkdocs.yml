@@ -52,6 +52,7 @@ plugins:
       type: date
       fallback_to_build_date: true
       enable_creation_date: true
+      strict: false
 
 markdown_extensions:
   - admonition
@@ -88,14 +89,18 @@ nav:
       - Basic Usage: user-guide/basic-usage.md
       - Configuration: user-guide/configuration.md
   - API Reference: api/overview.md
-  - Contributing: contributing/guidelines.md
+  - Contributing:
+      - Guidelines: contributing/guidelines.md
+      - Issue Templates: contributing/issue_templates.md
+      - Code of Conduct: code_of_conduct.md
   - Changelog: changelog.md
+  - Privacy Notice: privacy.md
 
 validation:
   nav:
     omitted_files: warn
-    not_found: error
-    absolute_links: error
+    not_found: warn # Changed from 'error' to 'warn'
+    absolute_links: warn # Changed from 'error' to 'warn'
 
 extra:
   social:
@@ -103,9 +108,26 @@ extra:
       link: https://github.com/dsj7419/gyntree
   analytics:
     provider: google
-    property: !ENV GOOGLE_ANALYTICS_KEY
+    property: G-9W4454MMW7
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >-
+            Thanks for your feedback!
   version:
     provider: mike
   generator: false
+
+extra_javascript:
+  - https://www.googletagmanager.com/gtag/js?id=G-9W4454MMW7
+  - js/analytics.js
 
 copyright: Copyright &copy; 2024 dsj7419

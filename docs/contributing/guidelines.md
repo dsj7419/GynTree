@@ -4,7 +4,7 @@ First off, thank you for considering contributing to GynTree! I welcome contribu
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our [Code of Conduct](../../CODE_OF_CONDUCT.md). Please report unacceptable behavior to [dsj7419@gmail.com](mailto:dsj7419@gmail.com).
+By participating in this project, you are expected to uphold our [Code of Conduct](../code_of_conduct.md). Please report unacceptable behavior to [dsj7419@gmail.com](mailto:dsj7419@gmail.com).
 
 ## How Can I Contribute?
 
@@ -14,7 +14,7 @@ We welcome contributions from the community! Whether you're submitting a bug rep
 
 ### Reporting Bugs
 
-To submit a bug report, please follow our [Bug Report Template](../../.github/ISSUE_TEMPLATE/bug_report.md). This helps maintainers and the community understand your report, reproduce the issue, and identify related problems.
+To submit a bug report, please follow our [Issue Templates](issue_templates.md#bug-report-template). This helps maintainers and the community understand your report, reproduce the issue, and identify related problems.
 
 - **Title**: Use a clear and descriptive title for the issue.
 - **Steps to Reproduce**: Provide a step-by-step description of how to reproduce the issue in as much detail as possible.
@@ -22,18 +22,18 @@ To submit a bug report, please follow our [Bug Report Template](../../.github/IS
 - **Screenshots**: Include any relevant screenshots that might help explain the problem.
 - **Additional Context**: Include your system details (e.g., OS version) and any other context that may be useful.
 
-You can submit a bug report using this [Bug Report Template](../../.github/ISSUE_TEMPLATE/bug_report.md).
+You can submit a bug report using this [[Issue Templates](issue_templates.md#bug-report-template).
 
 ### Suggesting Enhancements
 
-To suggest an enhancement or new feature, please follow our [Feature Request Template](../../.github/ISSUE_TEMPLATE/feature_request.md). This ensures your suggestion is well understood by maintainers and other contributors.
+To suggest an enhancement or new feature, please follow our [Issue Templates](issue_templates.md#bug-report-template). This ensures your suggestion is well understood by maintainers and other contributors.
 
 - **Title**: Use a clear and descriptive title for the suggestion.
 - **Description**: Provide a detailed description of the suggested enhancement, including any steps required to implement it.
 - **Use Case**: Explain why this enhancement would be useful for most GynTree users.
 - **Additional Context**: Include any relevant details or screenshots to clarify your suggestion.
 
-You can submit an enhancement suggestion using this [Feature Request Template](../../.github/ISSUE_TEMPLATE/feature_request.md).
+You can submit an enhancement suggestion using this [Issue Templates](issue_templates.md#bug-report-template).
 
 ### Your First Code Contribution
 
