@@ -16,4 +16,4 @@ coverage==7.6.1
 # Build and distribution
 build==1.0.3
 twine==4.0.2
-setuptools==75.1.0
+setuptools==75.5.0
