@@ -3,7 +3,7 @@ PyQt5==5.15.11
 PyQt5-Qt5==5.15.2
 PyQt5_sip==12.15.0
 psutil==6.0.0
-tqdm==4.66.5
+tqdm==4.67.1
 
 # For building executables
 pyinstaller==6.10.0
