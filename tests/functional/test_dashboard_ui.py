@@ -1,21 +1,10 @@
 import gc
 import logging
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 import psutil
 import pytest
-from PyQt5.QtCore import QPoint, QSize, Qt
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import (
-    QApplication,
-    QLabel,
-    QMainWindow,
-    QPushButton,
-    QStatusBar,
-    QWidget,
-)
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QLabel, QMainWindow, QPushButton
 
 from components.UI.animated_toggle import AnimatedToggle
 from components.UI.AutoExcludeUI import AutoExcludeUI

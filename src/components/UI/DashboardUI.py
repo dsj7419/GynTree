@@ -1,8 +1,9 @@
 import logging
 import os
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont, QIcon, QPixmap
+from PyQt5.QtGui import QCloseEvent, QFont, QIcon, QPixmap
 from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -21,8 +22,16 @@ from components.UI.ExclusionsManagerUI import ExclusionsManagerUI
 from components.UI.ProjectManagementUI import ProjectManagementUI
 from components.UI.ProjectUI import ProjectUI
 from components.UI.ResultUI import ResultUI
+from models.Project import Project
+from services.auto_exclude.AutoExcludeManager import AutoExcludeManager
+from services.DirectoryAnalyzer import DirectoryAnalyzer
+from services.ProjectContext import ProjectContext
+from services.SettingsManager import SettingsManager
 from utilities.resource_path import get_resource_path
 from utilities.theme_manager import ThemeManager
+
+if TYPE_CHECKING:
+    from controllers.AppController import AppController
 
 logger = logging.getLogger(__name__)
 
@@ -32,34 +41,31 @@ class DashboardUI(QMainWindow):
     project_loaded = pyqtSignal(object)
     theme_changed = pyqtSignal(str)
 
-    def __init__(self, controller):
+    def __init__(self, controller: "AppController") -> None:
         super().__init__()
         self.controller = controller
         self.theme_manager = ThemeManager.getInstance()
-        self.project_ui = None
-        self.result_ui = None
-        self.auto_exclude_ui = None
-        self.exclusions_ui = None
-        self.directory_tree_ui = None
-        self.theme_toggle = None
-        self._welcome_label = None
-        self.ui_components = []  # Track UI components for cleanup
+        self.project_ui: Optional[ProjectUI] = None
+        self.result_ui: Optional[ResultUI] = None
+        self.auto_exclude_ui: Optional[AutoExcludeUI] = None
+        self.exclusions_ui: Optional[ExclusionsManagerUI] = None
+        self.directory_tree_ui: Optional[DirectoryTreeUI] = None
+        self.theme_toggle: Optional[AnimatedToggle] = None
+        self._welcome_label: Optional[QLabel] = None
+        self.ui_components: List[Optional[QWidget]] = []
         self.initUI()
 
-    def initUI(self):
-        """Initialize the UI components"""
+    def initUI(self) -> None:
         self.setWindowTitle("GynTree Dashboard")
         icon_path = get_resource_path("assets/images/GynTree_logo.ico")
         self.setWindowIcon(QIcon(icon_path))
 
-        # Create central widget and main layout
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(20)
 
-        # Theme toggle setup - Put this first to ensure it's always visible
         theme_toggle_layout = QHBoxLayout()
         self.theme_toggle = AnimatedToggle(
             checked_color="#FFB000", pulse_checked_color="#44FFB000"
@@ -74,7 +80,6 @@ class DashboardUI(QMainWindow):
         theme_toggle_layout.addWidget(self.theme_toggle)
         main_layout.addLayout(theme_toggle_layout)
 
-        # Logo setup
         header_layout = QHBoxLayout()
         logo_label = QLabel()
         logo_path = get_resource_path("assets/images/gyntree_logo.png")
@@ -88,7 +93,6 @@ class DashboardUI(QMainWindow):
         else:
             logger.warning(f"Logo file not found at {logo_path}")
 
-        # Welcome label setup
         self._welcome_label = QLabel("Welcome to GynTree!")
         self._welcome_label.setFont(QFont("Arial", 24, QFont.Bold))
 
@@ -97,19 +101,16 @@ class DashboardUI(QMainWindow):
         header_layout.setAlignment(Qt.AlignCenter)
         main_layout.addLayout(header_layout)
 
-        # Button setup
         self.projects_btn = self.create_styled_button("Create New/Open a Project")
         self.manage_projects_btn = self.create_styled_button("Manage Projects")
         self.manage_exclusions_btn = self.create_styled_button("Manage Exclusions")
         self.analyze_directory_btn = self.create_styled_button("Analyze Directory")
         self.view_directory_tree_btn = self.create_styled_button("View Directory Tree")
 
-        # Initialize button states
         self.manage_exclusions_btn.setEnabled(False)
         self.analyze_directory_btn.setEnabled(False)
         self.view_directory_tree_btn.setEnabled(False)
 
-        # Add buttons to layout
         for btn in [
             self.projects_btn,
             self.manage_projects_btn,
@@ -119,7 +120,6 @@ class DashboardUI(QMainWindow):
         ]:
             main_layout.addWidget(btn)
 
-        # Connect button signals
         self.projects_btn.clicked.connect(self.show_project_ui)
         self.manage_projects_btn.clicked.connect(self.controller.manage_projects)
         self.manage_exclusions_btn.clicked.connect(self.controller.manage_exclusions)
@@ -128,46 +128,38 @@ class DashboardUI(QMainWindow):
             self.controller.view_directory_tree
         )
 
-        # Status bar setup
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("Ready")
 
-        # Set window properties
         self.setGeometry(300, 300, 800, 600)
-
-        # Apply initial theme
         self.theme_manager.apply_theme(self)
 
-    def create_styled_button(self, text):
-        """Create a styled button with consistent formatting"""
+    def create_styled_button(self, text: str) -> QPushButton:
         btn = QPushButton(text)
         font = QFont("Arial")
         font.setPointSize(14)
         btn.setFont(font)
         return btn
 
-    def on_theme_toggle_changed(self, state):
-        """Handle theme toggle state changes"""
+    def on_theme_toggle_changed(self, state: bool) -> None:
         new_theme = "dark" if state else "light"
         self.theme_manager.set_theme(new_theme)
         self.theme_manager.apply_theme(self)
         self.theme_changed.emit(new_theme)
 
-    def toggle_theme(self):
-        """Toggle the current theme"""
+    def toggle_theme(self) -> None:
         new_theme = self.theme_manager.toggle_theme()
-        self.theme_toggle.setChecked(new_theme == "dark")
+        if self.theme_toggle:
+            self.theme_toggle.setChecked(new_theme == "dark")
         self.theme_changed.emit(new_theme)
 
-    def show_dashboard(self):
-        """Show the main dashboard window"""
+    def show_dashboard(self) -> None:
         self.show()
         self.raise_()
         self.activateWindow()
 
-    def show_project_ui(self):
-        """Show the unified project UI for creating or loading projects"""
+    def show_project_ui(self) -> Optional[ProjectUI]:
         if self.project_ui:
             self.project_ui.close()
             self.project_ui = None
@@ -179,31 +171,27 @@ class DashboardUI(QMainWindow):
         self.project_ui.show()
         return self.project_ui
 
-    def show_project_management(self):
-        """Show the project management UI"""
+    def show_project_management(self) -> ProjectManagementUI:
         management_ui = ProjectManagementUI(self.controller, self.theme_manager)
         self.ui_components.append(management_ui)
         management_ui.show()
         return management_ui
 
-    def on_project_created(self, project):
-        """Handle project created event"""
+    def on_project_created(self, project: Project) -> None:
         logger.info(f"Project creation signal received: {project.name}")
         self.controller.on_project_created(project)
         self.update_project_info(project)
 
-    def on_project_loaded(self, project):
-        """Handle project loaded event"""
+    def on_project_loaded(self, project: Project) -> None:
         self.update_project_info(project)
 
     def show_auto_exclude_ui(
         self,
-        auto_exclude_manager,
-        settings_manager,
-        formatted_recommendations,
-        project_context,
-    ):
-        """Show the auto exclude UI window"""
+        auto_exclude_manager: AutoExcludeManager,
+        settings_manager: SettingsManager,
+        formatted_recommendations: Dict[str, Set[str]],
+        project_context: ProjectContext,
+    ) -> Optional[AutoExcludeUI]:
         mock_exclude_ui = getattr(self, "_mock_auto_exclude_ui", None)
         if mock_exclude_ui:
             mock_exclude_ui.show()
@@ -219,8 +207,7 @@ class DashboardUI(QMainWindow):
         self.auto_exclude_ui.show()
         return self.auto_exclude_ui
 
-    def show_result(self, directory_analyzer):
-        """Show the results UI window"""
+    def show_result(self, directory_analyzer: DirectoryAnalyzer) -> Optional[ResultUI]:
         mock_result_ui = getattr(self, "_mock_result_ui", None)
         if mock_result_ui:
             mock_result_ui.show()
@@ -235,8 +222,9 @@ class DashboardUI(QMainWindow):
             return self.result_ui
         return None
 
-    def manage_exclusions(self, settings_manager):
-        """Show the exclusions manager UI"""
+    def manage_exclusions(
+        self, settings_manager: SettingsManager
+    ) -> Optional[ExclusionsManagerUI]:
         mock_exclusions_ui = getattr(self, "_mock_exclusions_ui", None)
         if mock_exclusions_ui:
             mock_exclusions_ui.show()
@@ -257,8 +245,9 @@ class DashboardUI(QMainWindow):
         )
         return None
 
-    def view_directory_tree_ui(self, result):
-        """Show the directory tree UI"""
+    def view_directory_tree_ui(
+        self, result: Dict[str, Any]
+    ) -> Optional[DirectoryTreeUI]:
         mock_tree_ui = getattr(self, "_mock_directory_tree_ui", None)
         if mock_tree_ui:
             mock_tree_ui.update_tree(result)
@@ -274,8 +263,7 @@ class DashboardUI(QMainWindow):
         self.directory_tree_ui.show()
         return self.directory_tree_ui
 
-    def update_project_info(self, project):
-        """Update the UI with current project information"""
+    def update_project_info(self, project: Project) -> None:
         self.setWindowTitle(f"GynTree - {project.name}")
         status_msg = f"Current project: {project.name}, Start directory: {project.start_directory}"
         if hasattr(project, "status"):
@@ -283,36 +271,30 @@ class DashboardUI(QMainWindow):
         self.status_bar.showMessage(status_msg)
         self.enable_project_actions()
 
-    def enable_project_actions(self):
-        """Enable project-related buttons"""
+    def enable_project_actions(self) -> None:
         self.manage_exclusions_btn.setEnabled(True)
         self.analyze_directory_btn.setEnabled(True)
         self.view_directory_tree_btn.setEnabled(True)
 
-    def clear_directory_tree(self):
-        """Clear the directory tree view"""
+    def clear_directory_tree(self) -> None:
         if hasattr(self, "directory_tree_view"):
             self.directory_tree_view.clear()
         logger.debug("Directory tree cleared")
 
-    def clear_analysis(self):
-        """Clear the analysis results"""
+    def clear_analysis(self) -> None:
         if hasattr(self, "analysis_result_view"):
             self.analysis_result_view.clear()
         logger.debug("Analysis results cleared")
 
-    def clear_exclusions(self):
-        """Clear the exclusions list"""
+    def clear_exclusions(self) -> None:
         if hasattr(self, "exclusions_list_view"):
             self.exclusions_list_view.clear()
         logger.debug("Exclusions list cleared")
 
-    def show_error_message(self, title, message):
-        """Show an error message dialog"""
+    def show_error_message(self, title: str, message: str) -> None:
         QMessageBox.critical(self, title, message)
 
-    def closeEvent(self, event):
-        """Handle window close event and cleanup"""
+    def closeEvent(self, event: QCloseEvent) -> None:
         for component in self.ui_components:
             try:
                 if component and hasattr(component, "close"):

@@ -19,7 +19,7 @@ class IDEandGitAutoExclude(ExclusionService):
         super().__init__(start_directory, project_type_detector, settings_manager)
 
     def get_exclusions(self) -> Dict[str, Set[str]]:
-        recommendations = {
+        recommendations: Dict[str, Set[str]] = {
             "root_exclusions": set(),
             "excluded_dirs": set(),
             "excluded_files": set(),

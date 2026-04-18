@@ -2,7 +2,7 @@ import fnmatch
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set
 
 from models.Project import Project
 from services.ExclusionAggregator import ExclusionAggregator
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class SettingsManager:
-    config_dir: str = "config" 
+    config_dir: str = "config"
 
     def __init__(self, project: Project):
         """
@@ -30,52 +30,58 @@ class SettingsManager:
     def load_settings(self) -> Dict[str, Any]:
         """
         Load settings from file or initialize with defaults.
-
         Returns:
             Dict containing settings with all required keys
         """
         settings = {}
         try:
             if os.path.exists(self.config_path):
-                with open(self.config_path, "r", encoding='utf-8') as file:
-                    file_settings = json.load(file)
-                    if file_settings:  # Only update if we got valid settings
-                        settings = file_settings
+                with open(self.config_path, "r", encoding="utf-8") as file:
+                    settings = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.warning(f"Could not load settings file: {e}")
+            settings = {}
 
-        # Initialize with project values first
-        default_settings = {
-            "root_exclusions": list(self.project.root_exclusions)
-            if self.project.root_exclusions
-            else [],
-            "excluded_dirs": list(self.project.excluded_dirs)
-            if self.project.excluded_dirs
-            else [],
-            "excluded_files": list(self.project.excluded_files)
-            if self.project.excluded_files
-            else [],
-            "theme_preference": "light",
-        }
+        # Initialize with project values first if they exist
+        if self.project.root_exclusions:
+            settings["root_exclusions"] = list(
+                set(
+                    settings.get("root_exclusions", [])
+                    + list(self.project.root_exclusions)
+                )
+            )
+        if self.project.excluded_dirs:
+            settings["excluded_dirs"] = list(
+                set(
+                    settings.get("excluded_dirs", []) + list(self.project.excluded_dirs)
+                )
+            )
+        if self.project.excluded_files:
+            settings["excluded_files"] = list(
+                set(
+                    settings.get("excluded_files", [])
+                    + list(self.project.excluded_files)
+                )
+            )
 
-        # Only use defaults for keys that don't exist in settings
-        for key, default_value in default_settings.items():
-            if key not in settings:
-                settings[key] = default_value
-            elif isinstance(default_value, list) and isinstance(settings[key], list):
-                # For lists, merge while preserving order and uniqueness
-                existing_items = settings[key]
-                new_items = default_value
-                merged = list(dict.fromkeys(existing_items + new_items))
-                settings[key] = merged
+        # Ensure required keys exist with defaults
+        if "theme_preference" not in settings:
+            settings["theme_preference"] = "light"
+        if "root_exclusions" not in settings:
+            settings["root_exclusions"] = []
+        if "excluded_dirs" not in settings:
+            settings["excluded_dirs"] = []
+        if "excluded_files" not in settings:
+            settings["excluded_files"] = []
 
         return settings
 
     def get_theme_preference(self) -> str:
         """Get current theme preference."""
-        return self.settings.get("theme_preference", "light")
+        theme: str = self.settings.get("theme_preference", "light")
+        return theme
 
-    def set_theme_preference(self, theme: str):
+    def set_theme_preference(self, theme: str) -> None:
         """Set theme preference and save settings."""
         self.settings["theme_preference"] = theme
         self.save_settings()
@@ -100,18 +106,14 @@ class SettingsManager:
             "excluded_files": set(self.get_excluded_files()),
         }
 
-    def update_settings(self, new_settings: Dict[str, List[str]]):
+    def update_settings(self, new_settings: Dict[str, List[str]]) -> None:
         """Update settings with new values and save."""
         for key, value in new_settings.items():
             if key in self.settings:
-                # Normalize paths in lists
-                if isinstance(value, list):
-                    self.settings[key] = [os.path.normpath(item) for item in value]
-                else:
-                    self.settings[key] = value
+                self.settings[key] = [os.path.normpath(item) for item in value]
         self.save_settings()
 
-    def save_settings(self):
+    def save_settings(self) -> None:
         """Save current settings to file."""
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         with open(self.config_path, "w") as file:

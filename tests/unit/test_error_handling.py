@@ -1,13 +1,10 @@
-import os
 import time
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtWidgets import QApplication
 
 from controllers.AppController import AppController
-from controllers.ProjectController import ProjectController
 from models.Project import Project
 from services.DirectoryAnalyzer import DirectoryAnalyzer
 from services.ProjectContext import ProjectContext
@@ -111,14 +108,13 @@ class TestErrorHandling:
     def test_project_context_error_recovery(self, mock_project):
         context = ProjectContext(mock_project)
         context.auto_exclude_manager = None
-
         with patch("pathlib.Path.exists", return_value=True), patch(
             "PyQt5.QtWidgets.QMessageBox.critical"
         ), patch.object(context, "settings_manager", Mock()), patch.object(
             ProjectContext, "trigger_auto_exclude", side_effect=Exception("Test error")
         ):
             try:
-                result = context.trigger_auto_exclude()
+                context.trigger_auto_exclude()  # Removed result assignment
             except Exception as e:
                 assert "error" in str(e).lower()
 

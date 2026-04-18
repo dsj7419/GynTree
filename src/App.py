@@ -13,13 +13,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     sys.excepthook = ErrorHandler.global_exception_handler
-
     app = QApplication(sys.argv)
-
     theme_manager = ThemeManager.getInstance()
-
     try:
         controller = AppController()
     except Exception as e:
@@ -27,11 +24,8 @@ def main():
         sys.exit(1)
 
     app.aboutToQuit.connect(controller.cleanup)
-
     controller.run()
-
     theme_manager.apply_theme_to_all_windows(app)
-
     sys.exit(app.exec_())
 
 

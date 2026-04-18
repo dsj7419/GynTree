@@ -1,9 +1,4 @@
-import logging
-
 import pytest
-from typing import Any, Dict
-from PyQt5.QtWidgets import QWidget
-from unittest.mock import MagicMock, patch
 
 from controllers.UIController import UIController
 
@@ -173,6 +168,9 @@ def test_update_ui_error(ui_controller, mock_main_ui, mocker):
         "PyQt5.QtCore.QMetaObject.invokeMethod", side_effect=Exception("Test error")
     )
     ui_controller.update_ui(mocker.Mock(), {})
+
+    # Verify both the invocation and error handling
+    mock_invoke.assert_called_once()
     mock_main_ui.show_error_message.assert_called_once()
 
 

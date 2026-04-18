@@ -1,10 +1,8 @@
 import gc
 import json
 import logging
-import os
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Generator
+from typing import Generator
 
 import psutil
 import pytest
@@ -16,7 +14,6 @@ from services.ProjectContext import ProjectContext
 from services.ProjectTypeDetector import ProjectTypeDetector
 from services.RootExclusionManager import RootExclusionManager
 from services.SettingsManager import SettingsManager
-from utilities.theme_manager import ThemeManager
 
 pytestmark = pytest.mark.integration
 
@@ -236,10 +233,12 @@ def test_project_context_with_existing_settings(
     project_dir.mkdir(exist_ok=True)
 
     # Create settings directory in project directory
-    settings_dir = project_dir / "config" / "projects"
-    settings_dir.mkdir(parents=True, exist_ok=True)
-    settings_file = settings_dir / f"{mock_project.name}.json"
+    config_dir = project_dir / "config"
+    projects_dir = config_dir / "projects"
+    projects_dir.mkdir(parents=True, exist_ok=True)
+    settings_file = projects_dir / f"{mock_project.name}.json"
 
+    # Write settings with explicit theme preference
     settings_data = {
         "root_exclusions": ["existing_root"],
         "excluded_dirs": ["existing_dir"],
@@ -258,14 +257,16 @@ def test_project_context_with_existing_settings(
     mock_project.excluded_dirs = ["existing_dir"]
     mock_project.excluded_files = ["existing_file"]
 
-    # Create context and initialize before loading settings
+    # Create context and initialize
     context = ProjectContext(mock_project)
     context.initialize()
 
     try:
-        # Get theme directly from settings file to verify
+        # Verify settings are loaded correctly
+        assert context.settings_manager.get_theme_preference() == "dark"
         assert context.get_theme_preference() == "dark"
 
+        # Verify other settings
         root_exclusions = context.settings_manager.get_root_exclusions()
         excluded_dirs = context.settings_manager.get_excluded_dirs()
         excluded_files = context.settings_manager.get_excluded_files()
@@ -421,7 +422,7 @@ def test_cleanup_on_exception(helper: ProjectContextTestHelper) -> None:
         if context:
             try:
                 context.close()
-            except:
+            except Exception:
                 pass
 
     helper.check_memory_usage("cleanup on exception")

@@ -9,7 +9,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
-from components.UI.DashboardUI import DashboardUI
 from controllers.AppController import AppController
 
 
@@ -180,7 +179,7 @@ class TestSystemIntegration:
         controller = AppController()
         test_artifacts.track_widget(controller.main_ui)
 
-        with logger_context() as test_logger:
+        with logger_context() as _:
             controller.on_project_created(mock_project)
 
             def check_auto_exclude():

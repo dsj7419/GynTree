@@ -19,12 +19,11 @@ class DatabaseAutoExclude(ExclusionService):
         super().__init__(start_directory, project_type_detector, settings_manager)
 
     def get_exclusions(self) -> Dict[str, Set[str]]:
-        recommendations = {
+        recommendations: Dict[str, Set[str]] = {
             "root_exclusions": set(),
             "excluded_dirs": set(),
             "excluded_files": set(),
         }
-
         if self.project_type_detector.detect_database_project():
             recommendations["root_exclusions"].add("prisma")
             logger.debug("DatabaseAutoExclude: Adding 'prisma' to root exclusions")
@@ -38,7 +37,8 @@ class DatabaseAutoExclude(ExclusionService):
                         os.path.relpath(migrations_dir, self.start_directory)
                     )
                     logger.debug(
-                        f"DatabaseAutoExclude: Recommending exclusion of migrations directory {migrations_dir}"
+                        "DatabaseAutoExclude: Recommending exclusion of "
+                        f"migrations directory {migrations_dir}"
                     )
 
                 schema_path = os.path.join(prisma_dir, "schema.prisma")

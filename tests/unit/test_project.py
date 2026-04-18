@@ -49,7 +49,7 @@ class TestProject:
         invalid_chars = ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]
 
         for char in invalid_chars:
-            with pytest.raises(ValueError, match=f"Invalid project name:"):
+            with pytest.raises(ValueError, match="Invalid project name:"):
                 Project(name=f"test{char}project", start_directory=temp_dir)
 
     def test_project_name_validation_valid(self, temp_dir):

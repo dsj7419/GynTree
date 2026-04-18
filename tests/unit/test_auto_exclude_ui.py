@@ -1,19 +1,11 @@
 # tests/unit/test_auto_exclude_ui.py
 import pytest
-from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCloseEvent, QFont
 from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import (
-    QApplication,
-    QLabel,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QTreeWidgetItem,
-)
+from PyQt5.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton
 
 from components.UI.AutoExcludeUI import AutoExcludeUI
-from utilities.theme_manager import ThemeManager
 
 pytestmark = pytest.mark.unit
 

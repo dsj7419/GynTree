@@ -1,12 +1,8 @@
 import codecs
 import gc
 import logging
-import os
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
-from unittest.mock import Mock, patch
 
 import psutil
 import pytest
@@ -118,7 +114,7 @@ def test_multiline_comment_js(helper):
 
     file_path = helper.create_test_file(
         "test_file.js",
-        """/* 
+        """/*
          * GynTree: Multiline comment
          * in JavaScript file.
          */""",

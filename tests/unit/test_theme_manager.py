@@ -1,11 +1,9 @@
 # tests/unit/test_ThemeManager.py
 import gc
 import logging
-from typing import Optional
 
 import psutil
 import pytest
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget
 
 from utilities.theme_manager import ThemeManager

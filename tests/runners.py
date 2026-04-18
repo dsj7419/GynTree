@@ -1,31 +1,25 @@
 # runners.py
 
 import abc
-import json
 import logging
 import os
 import queue
 import shutil
 import signal
 import subprocess
-import sys
 import tempfile
-import threading
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import psutil
-import pytest
 
 logger = logging.getLogger(__name__)
 
 
 class TestExecutionError(Exception):
     """Custom exception for test execution errors"""
-
-    pass
 
 
 @contextmanager
@@ -71,7 +65,6 @@ class TestRunnerBase(abc.ABC):
         reports_dir: str,
     ) -> "TestResult":
         """Run tests with enhanced error handling and reporting"""
-        pass
 
     def _build_pytest_args(
         self,

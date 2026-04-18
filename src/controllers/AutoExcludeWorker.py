@@ -1,7 +1,10 @@
 import logging
 import traceback
+from typing import List, Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal
+
+from services.ProjectContext import ProjectContext
 
 logger = logging.getLogger(__name__)
 
@@ -12,14 +15,14 @@ class AutoExcludeWorker(QObject):
     finished = pyqtSignal(list)
     error = pyqtSignal(str)
 
-    def __init__(self, project_context):
+    def __init__(self, project_context: ProjectContext) -> None:
         super().__init__()
         if not project_context:
             raise ValueError("Project context cannot be None")
         self._project_context = project_context
         self._is_running = False
 
-    def run(self):
+    def run(self) -> Optional[List[str]]:
         if self._is_running:
             return None
 
@@ -38,18 +41,17 @@ class AutoExcludeWorker(QObject):
         finally:
             self._is_running = False
 
-    def _perform_analysis(self):
+    def _perform_analysis(self) -> List[str]:
         recommendations = self._project_context.trigger_auto_exclude()
         if not recommendations:
             return []
-
         if isinstance(recommendations, str):
             return [recommendations]
         elif isinstance(recommendations, list):
             return recommendations
         return [str(recommendations)]
 
-    def _validate_context(self):
+    def _validate_context(self) -> None:
         if not self._project_context or not hasattr(
             self._project_context, "settings_manager"
         ):
@@ -57,7 +59,7 @@ class AutoExcludeWorker(QObject):
                 "ProjectContext or SettingsManager not properly initialized"
             )
 
-    def _handle_error(self, exception):
+    def _handle_error(self, exception: Exception) -> str:
         error_msg = f"Error in auto-exclusion analysis: {str(exception)}"
         logger.error(f"{error_msg}\n{traceback.format_exc()}")
         return error_msg

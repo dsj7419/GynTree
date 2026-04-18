@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -19,53 +19,54 @@ class DefaultFileReader(FileReader):
         """
         Read file content with proper permission and error handling.
         """
-        if not os.path.exists(filepath):
+        if not os.path.exists(filepath) or not self._has_read_access(filepath):
             return "No description available"
 
-        # Atomic file access check for Windows
+        content = self._read_with_encoding(filepath, max_chars, "utf-8")
+        if content is not None:
+            return content
+
+        content = self._read_with_encoding(filepath, max_chars, "utf-16")
+        if content is not None:
+            return content
+
+        return "No description available"
+
+    def _has_read_access(self, filepath: str) -> bool:
+        """Check if the file exists and is readable."""
         try:
             with open(filepath, "r"):
-                has_access = True
+                return os.access(filepath, os.R_OK)
         except (PermissionError, OSError):
-            return "No description available"
+            return False
 
-        if not has_access or not os.access(filepath, os.R_OK):
-            return "No description available"
-
+    def _read_with_encoding(
+        self, filepath: str, max_chars: int, encoding: str
+    ) -> Optional[str]:
+        """Attempt to read the file with the given encoding."""
         try:
-            # Try UTF-8 first
-            with codecs.open(filepath, "r", encoding="utf-8") as file:
+            with codecs.open(filepath, "r", encoding=encoding) as file:
                 content = file.read(max_chars)
-                if not content:
-                    return "File found empty"
-                return content
+                return content if content else "File found empty"
         except UnicodeDecodeError:
-            try:
-                # Fall back to UTF-16
-                with codecs.open(filepath, "r", encoding="utf-16") as file:
-                    content = file.read(max_chars)
-                    if not content:
-                        return "File found empty"
-                    return content
-            except (PermissionError, OSError):
-                return "No description available"
-            except Exception:
-                return "No description available"
+            return None
         except (PermissionError, OSError):
             return "No description available"
         except Exception as e:
-            logger.error(f"Error reading file {filepath}: {e}")
+            logger.error(f"Error reading file {filepath} with {encoding}: {e}")
             return "No description available"
 
 
 class CommentSyntax(ABC):
     @abstractmethod
-    def get_syntax(self, file_extension: str) -> Dict[str, Optional[Tuple[str, str]]]:
+    def get_syntax(
+        self, file_extension: str
+    ) -> Dict[str, Optional[Union[str, Tuple[str, str]]]]:
         pass
 
 
 class DefaultCommentSyntax(CommentSyntax):
-    syntax = {
+    syntax: Dict[str, Dict[str, Optional[Union[str, Tuple[str, str]]]]] = {
         ".py": {"single": "#", "multi": ('"""', '"""')},
         ".js": {"single": "//", "multi": ("/*", "*/")},
         ".ts": {"single": "//", "multi": ("/*", "*/")},
@@ -77,48 +78,19 @@ class DefaultCommentSyntax(CommentSyntax):
         ".cpp": {"single": "//", "multi": ("/*", "*/")},
     }
 
-    def get_syntax(self, file_extension: str) -> Dict[str, Optional[Tuple[str, str]]]:
-        return self.syntax.get(file_extension, {})
+    def get_syntax(
+        self, file_extension: str
+    ) -> Dict[str, Optional[Union[str, Tuple[str, str]]]]:
+        return self.syntax.get(file_extension, {"single": None, "multi": None})
 
 
 class CommentParser:
-    """
-    A parser for extracting GynTree comments from various file types.
-
-    This parser supports both single-line and multi-line comments across different
-    programming languages. It looks for comments that start with 'GynTree:' (case-insensitive)
-    and extracts the content following this marker.
-
-    Key behaviors:
-    - Only the first GynTree comment in a file is extracted.
-    - For multi-line comments, all lines after the GynTree marker are included until the end of the comment.
-    - The parser preserves the original formatting of the comment, including newlines and indentation.
-    - Comments not starting with 'GynTree:' are ignored.
-    - If no GynTree comment is found, 'No description available' is returned.
-    - For unsupported file types, 'Unsupported file type' is returned.
-    - For empty files, 'File found empty' is returned.
-
-    The parser supports various file types including Python, JavaScript, C++, HTML, and others.
-    """
-
     def __init__(self, file_reader: FileReader, comment_syntax: CommentSyntax):
         self.file_reader = file_reader
         self.comment_syntax = comment_syntax
         self.gyntree_pattern = re.compile(r"(?i)gyntree:", re.IGNORECASE)
 
     def get_file_purpose(self, filepath: str) -> str:
-        """
-        Get the purpose of a file from its GynTree comments.
-
-        Args:
-            filepath: Path to the file to parse. Must not be None.
-
-        Returns:
-            str: The file's purpose or an appropriate message.
-
-        Raises:
-            ValueError: If filepath is None.
-        """
         if filepath is None:
             raise ValueError("Filepath cannot be None")
 
@@ -139,19 +111,21 @@ class CommentParser:
         single_comment_result = None
         multi_comment_result = None
 
-        # First check single-line comments at the file level
-        if syntax["single"]:
-            single_comment_result = self._extract_single_line_comment(
-                lines, syntax["single"], ignore_docstring=True
-            )
+        single_line_syntax = syntax.get("single")
+        multi_line_syntax = syntax.get("multi")
 
-        # Then check multi-line comments if no single-line comment was found
-        if not single_comment_result and syntax["multi"]:
-            multi_comment_result = self._extract_multi_line_comment(
-                lines, syntax["multi"], file_extension
-            )
+        if single_line_syntax:
+            if isinstance(single_line_syntax, str):
+                single_comment_result = self._extract_single_line_comment(
+                    lines, single_line_syntax, ignore_docstring=True
+                )
 
-        # Return the first found comment
+        if not single_comment_result and multi_line_syntax:
+            if isinstance(multi_line_syntax, tuple):
+                multi_comment_result = self._extract_multi_line_comment(
+                    lines, multi_line_syntax, file_extension
+                )
+
         return (
             single_comment_result or multi_comment_result or "No description available"
         )
@@ -161,27 +135,24 @@ class CommentParser:
     ) -> Optional[str]:
         start_delim, end_delim = delimiters
         in_comment = False
-        comment_lines = []
+        comment_lines: List[str] = []
         gyntree_found = False
 
         for line in lines:
             stripped = line.strip()
 
-            # Handle start of multi-line comment
             if not in_comment and start_delim in line:
                 in_comment = True
                 start_index = line.index(start_delim) + len(start_delim)
                 line = line[start_index:]
                 stripped = line.strip()
 
-            # Process comment content
             if in_comment:
                 if not gyntree_found:
-                    # Look for GynTree marker in current line
                     match = self.gyntree_pattern.search(stripped)
                     if match:
                         gyntree_found = True
-                        line = line[line.find("GynTree:") + 8 :]
+                        line = line[line.find("GynTree:") + 8 :].strip()
                         comment_lines = []
 
                 if gyntree_found:
@@ -192,7 +163,6 @@ class CommentParser:
                         break
                     comment_lines.append(line)
 
-            # Handle end of multi-line comment
             if end_delim in line:
                 in_comment = False
 
@@ -209,7 +179,6 @@ class CommentParser:
         for line in lines:
             stripped = line.strip()
 
-            # Track docstring state if needed
             if ignore_docstring:
                 if '"""' in line or "'''" in line:
                     docstring_count += line.count('"""') + line.count("'''")
@@ -217,10 +186,9 @@ class CommentParser:
                 if in_docstring:
                     continue
 
-            # Process single-line comments
             if stripped.startswith(delimiter):
                 if self.gyntree_pattern.search(stripped):
-                    if "::" in stripped:  # Skip malformed comments
+                    if "::" in stripped:
                         continue
                     content = stripped[stripped.find("GynTree:") + 8 :].strip()
                     if content:
@@ -234,7 +202,6 @@ class CommentParser:
         if not comment_lines:
             return ""
 
-        # Remove empty lines at start and end
         while comment_lines and not comment_lines[0].strip():
             comment_lines.pop(0)
         while comment_lines and not comment_lines[-1].strip():
@@ -243,12 +210,10 @@ class CommentParser:
         if file_extension == ".py":
             return self._clean_python_docstring(comment_lines)
 
-        # Clean and join lines
         cleaned_lines = []
         for line in comment_lines:
             cleaned = line.strip()
             if cleaned:
-                # Remove leading asterisks and clean spaces
                 cleaned = cleaned.lstrip("*").strip()
                 if cleaned:
                     words = [word for word in cleaned.split() if word]

@@ -5,7 +5,6 @@ import time
 import psutil
 import pytest
 from PyQt5.QtCore import Qt
-from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QPushButton, QTreeWidget
 
 from components.UI.ExclusionsManagerUI import ExclusionsManagerUI

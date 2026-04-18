@@ -19,7 +19,7 @@ class JavaScriptNodeJsAutoExclude(ExclusionService):
         super().__init__(start_directory, project_type_detector, settings_manager)
 
     def get_exclusions(self) -> Dict[str, Set[str]]:
-        recommendations = {
+        recommendations: Dict[str, Set[str]] = {
             "root_exclusions": set(),
             "excluded_dirs": set(),
             "excluded_files": set(),
@@ -40,7 +40,8 @@ class JavaScriptNodeJsAutoExclude(ExclusionService):
             }
             recommendations["root_exclusions"].update(root_exclusions)
             logger.debug(
-                f"JavaScriptNodeJsAutoExclude: Adding JavaScript/Node.js related excluded_dirs to root exclusions: {root_exclusions}"
+                "JavaScriptNodeJsAutoExclude: Adding JavaScript/Node.js related "
+                f"excluded_dirs to root exclusions: {root_exclusions}"
             )
 
             file_exclusions = {
@@ -64,7 +65,8 @@ class JavaScriptNodeJsAutoExclude(ExclusionService):
             }
             recommendations["excluded_files"].update(file_exclusions)
             logger.debug(
-                f"JavaScriptNodeJsAutoExclude: Recommending JavaScript/Node.js related files for exclusion: {file_exclusions}"
+                "JavaScriptNodeJsAutoExclude: Recommending JavaScript/Node.js "
+                f"related files for exclusion: {file_exclusions}"
             )
 
         for root, dirs, files in self.walk_directory():
@@ -75,7 +77,8 @@ class JavaScriptNodeJsAutoExclude(ExclusionService):
                         os.path.relpath(full_path, self.start_directory)
                     )
                     logger.debug(
-                        f"JavaScriptNodeJsAutoExclude: Recommending exclusion of minified file {full_path}"
+                        "JavaScriptNodeJsAutoExclude: Recommending exclusion "
+                        f"of minified file {full_path}"
                     )
 
         return recommendations

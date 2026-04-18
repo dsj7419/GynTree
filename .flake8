@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 100
-exclude = 
+exclude =
     .git,
     __pycache__,
     build,
@@ -21,16 +21,17 @@ per-file-ignores =
     __init__.py: F401
     # Allow long lines in test files
     tests/*: E501
-    
+   
 ignore =
-    # Allow line break before binary operator
-    W503
-    # Allow line break after binary operator
-    W504
-    # Allow multiple spaces around operators
-    E221
-    E222
-    # Allow multiple spaces after ','
-    E241
-    
+    # Line break before/after binary operator
+    W503,
+    W504,
+    # Multiple spaces around operators
+    E221,
+    E222,
+    # Multiple spaces after ','
+    E241,
+    # Whitespace before ':' (needed for Black compatibility)
+    E203
+
 max-complexity = 12

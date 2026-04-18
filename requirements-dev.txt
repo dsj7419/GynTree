@@ -3,6 +3,8 @@ black==23.12.1
 flake8==7.0.0
 mypy==1.8.0
 isort==5.13.2
+PyQt5-stubs==5.15.6.0
+types-setuptools==75.2.0.20241025
 
 # Testing
 pytest==8.3.3

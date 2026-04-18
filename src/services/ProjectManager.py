@@ -15,10 +15,9 @@ logger = logging.getLogger(__name__)
 class ProjectManager:
     projects_dir = "config/projects"
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize project manager and ensure projects directory exists.
-
         Raises:
             PermissionError: If directory cannot be created due to permissions
             OSError: If directory cannot be created due to other OS errors
@@ -29,10 +28,8 @@ class ProjectManager:
     def save_project(self, project: Project) -> None:
         """
         Save a project to a JSON file.
-
         Args:
             project: Project instance to save
-
         Raises:
             OSError: If file cannot be written
         """
@@ -47,17 +44,14 @@ class ProjectManager:
     def load_project(self, project_name: str) -> Optional[Project]:
         """
         Load a project from a JSON file.
-
         Args:
             project_name: Name of project to load
-
         Returns:
             Project instance if successful, None if project doesn't exist or can't be loaded
         """
         project_file = os.path.join(self.projects_dir, f"{project_name}.json")
         if not os.path.exists(project_file):
             return None
-
         try:
             with open(project_file, "r") as f:
                 data = json.load(f)
@@ -67,30 +61,35 @@ class ProjectManager:
             return None
 
     def list_projects(self) -> List[str]:
-        """
-        List all saved projects.
-
-        Returns:
-            List of project names
-        """
+        """List all saved projects."""
         try:
+            logger.debug(
+                f"Listing projects from directory: {os.path.abspath(self.projects_dir)}"
+            )
+            if not os.path.exists(self.projects_dir):
+                logger.warning(
+                    f"Projects directory does not exist: {self.projects_dir}"
+                )
+                os.makedirs(self.projects_dir, exist_ok=True)
+                return []
             projects = []
             for filename in os.listdir(self.projects_dir):
                 if filename.endswith(".json"):
+                    logger.debug(f"Found project file: {filename}")
                     project_name = filename[:-5]
                     projects.append(project_name)
-            return projects
+            logger.debug(f"Total projects found: {len(projects)}")
+            return sorted(projects)
         except (PermissionError, OSError) as e:
             logger.error(f"Failed to list projects: {e}")
+            logger.error(f"Current working directory: {os.getcwd()}")
             return []
 
     def delete_project(self, project_name: str) -> bool:
         """
         Delete a project configuration file.
-
         Args:
             project_name: Name of project to delete
-
         Returns:
             True if project was deleted, False otherwise
         """

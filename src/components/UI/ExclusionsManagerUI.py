@@ -1,8 +1,9 @@
 import logging
 import os
+from typing import TYPE_CHECKING, List
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QCloseEvent, QFont, QIcon, QShowEvent
 from PyQt5.QtWidgets import (
     QFileDialog,
     QGroupBox,
@@ -18,21 +19,30 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from services.SettingsManager import SettingsManager
 from utilities.resource_path import get_resource_path
 from utilities.theme_manager import ThemeManager
+
+if TYPE_CHECKING:
+    from controllers.AppController import AppController
 
 logger = logging.getLogger(__name__)
 
 
 class ExclusionsManagerUI(QWidget):
-    def __init__(self, controller, theme_manager: ThemeManager, settings_manager):
+    def __init__(
+        self,
+        controller: "AppController",
+        theme_manager: ThemeManager,
+        settings_manager: SettingsManager,
+    ) -> None:
         super().__init__()
         self.controller = controller
         self.theme_manager = theme_manager
         self.settings_manager = settings_manager
-        self.exclusion_tree = None
-        self.root_tree = None
-        self._skip_show_event = False  # Add flag for testing
+        self.exclusion_tree: QTreeWidget = QTreeWidget()
+        self.root_tree: QTreeWidget = QTreeWidget()
+        self._skip_show_event: bool = False
 
         self.setWindowTitle("Exclusions Manager")
         self.setWindowIcon(QIcon(get_resource_path("assets/images/GynTree_logo.ico")))
@@ -40,7 +50,7 @@ class ExclusionsManagerUI(QWidget):
         self.init_ui()
         self.theme_manager.themeChanged.connect(self.apply_theme)
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(15)
@@ -50,23 +60,18 @@ class ExclusionsManagerUI(QWidget):
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 
-        # Splitter for root exclusions and detailed exclusions
         splitter = QSplitter(Qt.Vertical)
 
-        # Root exclusions (read-only)
         root_group = QGroupBox("Root Exclusions (Non-editable)")
         root_layout = QVBoxLayout()
-        self.root_tree = QTreeWidget()
         self.root_tree.setHeaderLabels(["Excluded Paths"])
         self.root_tree.header().setSectionResizeMode(0, QHeaderView.Stretch)
         root_layout.addWidget(self.root_tree)
         root_group.setLayout(root_layout)
         splitter.addWidget(root_group)
 
-        # Detailed exclusions (editable)
         detailed_group = QGroupBox("Detailed Exclusions")
         detailed_layout = QVBoxLayout()
-        self.exclusion_tree = QTreeWidget()
         self.exclusion_tree.setHeaderLabels(["Type", "Path"])
         self.exclusion_tree.header().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
@@ -100,12 +105,12 @@ class ExclusionsManagerUI(QWidget):
 
         self.apply_theme()
 
-    def showEvent(self, event):
+    def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
         if not self._skip_show_event:
             self.load_project_data()
 
-    def load_project_data(self):
+    def load_project_data(self) -> None:
         if (
             self.controller.project_controller.project_context
             and self.controller.project_controller.project_context.is_initialized
@@ -119,19 +124,20 @@ class ExclusionsManagerUI(QWidget):
             QMessageBox.warning(
                 self,
                 "No Project",
-                "No project is currently loaded or initialized. Please load or create a project first.",
+                "No project is currently loaded. Please load or create a project first.",
             )
 
-    def populate_root_exclusions(self):
+    def populate_root_exclusions(self) -> None:
         self.root_tree.clear()
         if self.settings_manager:
             root_exclusions = self.settings_manager.get_root_exclusions()
             for path in sorted(root_exclusions):
-                item = QTreeWidgetItem(self.root_tree, [path])
+                item = QTreeWidgetItem(self.root_tree)
+                item.setText(0, path)
                 item.setFlags(item.flags() & ~Qt.ItemIsSelectable & ~Qt.ItemIsEditable)
             self.root_tree.expandAll()
 
-    def add_directory(self):
+    def add_directory(self) -> None:
         if not self.settings_manager:
             QMessageBox.warning(self, "No Project", "No project is currently loaded.")
             return
@@ -145,8 +151,8 @@ class ExclusionsManagerUI(QWidget):
                 self.controller.project_controller.project_context.project.start_directory,
             )
             exclusions = self.settings_manager.get_all_exclusions()
-            excluded_dirs = set(exclusions.get("excluded_dirs", []))
-            root_exclusions = set(exclusions.get("root_exclusions", []))
+            excluded_dirs = set(exclusions.get("excluded_dirs", set()))
+            root_exclusions = set(exclusions.get("root_exclusions", set()))
 
             if (
                 relative_directory not in excluded_dirs
@@ -164,7 +170,7 @@ class ExclusionsManagerUI(QWidget):
                     f"The directory '{relative_directory}' is already excluded.",
                 )
 
-    def add_file(self):
+    def add_file(self) -> None:
         if not self.settings_manager:
             QMessageBox.warning(self, "No Project", "No project is currently loaded.")
             return
@@ -176,8 +182,8 @@ class ExclusionsManagerUI(QWidget):
                 self.controller.project_controller.project_context.project.start_directory,
             )
             exclusions = self.settings_manager.get_all_exclusions()
-            excluded_files = set(exclusions.get("excluded_files", []))
-            root_exclusions = set(exclusions.get("root_exclusions", []))
+            excluded_files = set(exclusions.get("excluded_files", set()))
+            root_exclusions = set(exclusions.get("root_exclusions", set()))
 
             if relative_file not in excluded_files and not any(
                 relative_file.startswith(root_dir) for root_dir in root_exclusions
@@ -194,7 +200,7 @@ class ExclusionsManagerUI(QWidget):
                     f"The file '{relative_file}' is already excluded or within a root exclusion.",
                 )
 
-    def remove_selected(self):
+    def remove_selected(self) -> None:
         if not self.settings_manager:
             QMessageBox.warning(self, "No Project", "No project is currently loaded.")
             return
@@ -207,8 +213,8 @@ class ExclusionsManagerUI(QWidget):
             return
 
         exclusions = self.settings_manager.get_all_exclusions()
-        excluded_dirs = set(exclusions.get("excluded_dirs", []))
-        excluded_files = set(exclusions.get("excluded_files", []))
+        excluded_dirs = set(exclusions.get("excluded_dirs", set()))
+        excluded_files = set(exclusions.get("excluded_files", set()))
         updated = False
 
         for item in selected_items:
@@ -232,75 +238,78 @@ class ExclusionsManagerUI(QWidget):
             )
             self.populate_exclusion_tree()
 
-    def populate_exclusion_tree(self):
+    def populate_exclusion_tree(self) -> None:
         self.exclusion_tree.clear()
         if self.settings_manager:
             exclusions = self.settings_manager.get_all_exclusions()
 
-            dirs_item = QTreeWidgetItem(self.exclusion_tree, ["Excluded Dirs"])
+            dirs_item = QTreeWidgetItem(self.exclusion_tree)
+            dirs_item.setText(0, "Excluded Dirs")
             dirs_item.setFlags(dirs_item.flags() & ~Qt.ItemIsSelectable)
-            for directory in sorted(exclusions.get("excluded_dirs", [])):
-                item = QTreeWidgetItem(dirs_item, ["Directory", str(directory)])
-                item.setFlags(item.flags() | Qt.ItemIsSelectable | Qt.ItemIsEditable)
 
-            files_item = QTreeWidgetItem(self.exclusion_tree, ["Excluded Files"])
+            for directory in sorted(exclusions.get("excluded_dirs", set())):
+                child = QTreeWidgetItem(dirs_item)
+                child.setText(0, "Directory")
+                child.setText(1, str(directory))
+                child.setFlags(child.flags() | Qt.ItemIsSelectable | Qt.ItemIsEditable)
+
+            files_item = QTreeWidgetItem(self.exclusion_tree)
+            files_item.setText(0, "Excluded Files")
             files_item.setFlags(files_item.flags() & ~Qt.ItemIsSelectable)
-            for file in sorted(exclusions.get("excluded_files", [])):
-                item = QTreeWidgetItem(files_item, ["File", str(file)])
-                item.setFlags(item.flags() | Qt.ItemIsSelectable | Qt.ItemIsEditable)
+
+            for file in sorted(exclusions.get("excluded_files", set())):
+                child = QTreeWidgetItem(files_item)
+                child.setText(0, "File")
+                child.setText(1, str(file))
+                child.setFlags(child.flags() | Qt.ItemIsSelectable | Qt.ItemIsEditable)
 
             self.exclusion_tree.expandAll()
 
-    def save_and_exit(self):
-        if self.settings_manager:
-            try:
-                # Get root exclusions
-                root_exclusions = []
-                for i in range(self.root_tree.topLevelItemCount()):
-                    item = self.root_tree.topLevelItem(i)
-                    if item:
-                        root_exclusions.append(item.text(0))
-
-                # Get excluded directories
-                excluded_dirs = []
-                dirs_item = self.exclusion_tree.topLevelItem(0)
-                if dirs_item:
-                    for i in range(dirs_item.childCount()):
-                        child = dirs_item.child(i)
-                        if child:
-                            excluded_dirs.append(child.text(1))
-
-                # Get excluded files
-                excluded_files = []
-                files_item = self.exclusion_tree.topLevelItem(1)
-                if files_item:
-                    for i in range(files_item.childCount()):
-                        child = files_item.child(i)
-                        if child:
-                            excluded_files.append(child.text(1))
-
-                # Update settings
-                self.settings_manager.update_settings(
-                    {
-                        "root_exclusions": root_exclusions,
-                        "excluded_dirs": excluded_dirs,
-                        "excluded_files": excluded_files,
-                    }
-                )
-                self.settings_manager.save_settings()
-                self.close()
-            except Exception as e:
-                logger.error(f"Error saving exclusions: {str(e)}")
-                QMessageBox.warning(
-                    self, "Error", f"Failed to save exclusions: {str(e)}"
-                )
-        else:
+    def save_and_exit(self) -> None:
+        if not self.settings_manager:
             QMessageBox.warning(
                 self, "Error", "No project loaded. Cannot save exclusions."
             )
+            return
 
-    def apply_theme(self):
+        try:
+            root_exclusions: List[str] = []
+            for i in range(self.root_tree.topLevelItemCount()):
+                item = self.root_tree.topLevelItem(i)
+                if item:
+                    root_exclusions.append(item.text(0))
+
+            excluded_dirs: List[str] = []
+            dirs_item = self.exclusion_tree.topLevelItem(0)
+            if dirs_item:
+                for i in range(dirs_item.childCount()):
+                    child = dirs_item.child(i)
+                    if child:
+                        excluded_dirs.append(child.text(1))
+
+            excluded_files: List[str] = []
+            files_item = self.exclusion_tree.topLevelItem(1)
+            if files_item:
+                for i in range(files_item.childCount()):
+                    child = files_item.child(i)
+                    if child:
+                        excluded_files.append(child.text(1))
+
+            self.settings_manager.update_settings(
+                {
+                    "root_exclusions": root_exclusions,
+                    "excluded_dirs": excluded_dirs,
+                    "excluded_files": excluded_files,
+                }
+            )
+            self.settings_manager.save_settings()
+            self.close()
+        except Exception as e:
+            logger.error(f"Error saving exclusions: {str(e)}")
+            QMessageBox.warning(self, "Error", f"Failed to save exclusions: {str(e)}")
+
+    def apply_theme(self) -> None:
         self.theme_manager.apply_theme(self)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         super().closeEvent(event)

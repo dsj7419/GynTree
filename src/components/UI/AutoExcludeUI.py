@@ -1,8 +1,9 @@
 import logging
 import os
+from typing import Dict, Optional, Set, TypedDict
 
 from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QCloseEvent, QFont, QIcon
 from PyQt5.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
@@ -10,29 +11,37 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QScrollArea,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
+from services.auto_exclude.AutoExcludeManager import AutoExcludeManager
+from services.ProjectContext import ProjectContext
+from services.SettingsManager import SettingsManager
 from utilities.resource_path import get_resource_path
 from utilities.theme_manager import ThemeManager
 
 logger = logging.getLogger(__name__)
 
 
+class ExclusionRecommendations(TypedDict):
+    root_exclusions: Set[str]
+    excluded_dirs: Set[str]
+    excluded_files: Set[str]
+
+
 class AutoExcludeUI(QMainWindow):
     def __init__(
         self,
-        auto_exclude_manager,
-        settings_manager,
-        formatted_recommendations,
-        project_context,
-        theme_manager=None,
-        apply_initial_theme=True,
-    ):
+        auto_exclude_manager: AutoExcludeManager,
+        settings_manager: SettingsManager,
+        formatted_recommendations: ExclusionRecommendations,
+        project_context: ProjectContext,
+        theme_manager: Optional[ThemeManager] = None,
+        apply_initial_theme: bool = True,
+    ) -> None:
         super().__init__()
         self.auto_exclude_manager = auto_exclude_manager
         self.settings_manager = settings_manager
@@ -53,16 +62,17 @@ class AutoExcludeUI(QMainWindow):
         if apply_initial_theme:
             self.apply_theme()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         central_widget = QWidget()
         main_layout = QVBoxLayout(central_widget)
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(10)
 
         header_layout = QHBoxLayout()
-        title_label = QLabel(
-            "Auto-Exclude Recommendations", font=QFont("Arial", 16, QFont.Bold)
-        )
+        title_font = QFont("Arial", 16)
+        title_font.setBold(True)
+        title_label = QLabel("Auto-Exclude Recommendations", self)
+        title_label.setFont(title_font)
         header_layout.addWidget(title_label)
 
         collapse_btn = QPushButton("Collapse All")
@@ -97,8 +107,7 @@ class AutoExcludeUI(QMainWindow):
 
         self.apply_theme()
 
-    def populate_tree(self):
-        """Populates the tree with merged exclusions from both AutoExcludeManager and project folder."""
+    def populate_tree(self) -> None:
         self.tree_widget.clear()
         root = self.tree_widget.invisibleRootItem()
 
@@ -122,8 +131,7 @@ class AutoExcludeUI(QMainWindow):
 
         self.tree_widget.expandAll()
 
-    def get_combined_exclusions(self):
-        """Retrieve exclusions from AutoExcludeManager and merge with project exclusions."""
+    def get_combined_exclusions(self) -> Dict[str, Set[str]]:
         manager_recommendations = self.auto_exclude_manager.get_recommendations()
 
         root_exclusions = set(
@@ -143,7 +151,7 @@ class AutoExcludeUI(QMainWindow):
 
         return combined_exclusions
 
-    def apply_exclusions(self):
+    def apply_exclusions(self) -> None:
         try:
             self.auto_exclude_manager.apply_recommendations()
             QMessageBox.information(
@@ -153,12 +161,14 @@ class AutoExcludeUI(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to apply exclusions: {str(e)}")
 
-    def update_recommendations(self, formatted_recommendations):
+    def update_recommendations(
+        self, formatted_recommendations: ExclusionRecommendations
+    ) -> None:
         self.formatted_recommendations = formatted_recommendations
         self.populate_tree()
 
-    def apply_theme(self):
+    def apply_theme(self) -> None:
         self.theme_manager.apply_theme(self)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         super().closeEvent(event)

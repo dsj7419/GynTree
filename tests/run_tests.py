@@ -15,10 +15,8 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from queue import Queue
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
-import psutil
 from colorama import AnsiToWin32, Fore, Style, init
 
 # Initialize colorama with Windows-specific settings
@@ -172,19 +170,14 @@ class TestRunner:
             except Exception as e:
                 logger.warning(f"Error cleaning up temporary file {item}: {e}")
 
-    def run_tests(
-        self, options: Dict, selected_tests: Optional[List[str]] = None
-    ) -> TestResult:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = LOG_DIR / f"test_run_{timestamp}.log"
-        report_file = HTML_REPORT_DIR / f"report_{timestamp}.html"
-
-        # Build pytest command
+    def _prepare_test_command(
+        self, options: Dict, selected_tests: Optional[List[str]], report_file: Path
+    ) -> List[str]:
         cmd = ["pytest", "-v"]
 
         if options.get("parallel", False):
             cpu_count = os.cpu_count() or 1
-            worker_count = min(cpu_count, 4)  # Limit to 4 workers
+            worker_count = min(cpu_count, 4)
             cmd.extend(["-n", str(worker_count)])
 
         if options.get("html_report", True):
@@ -197,26 +190,74 @@ class TestRunner:
                     "--cov-report=term-missing",
                     f"--cov-report=html:{COVERAGE_DIR}",
                     "--cov-report=json:coverage.json",
-                    "--cov-branch",  # Enable branch coverage
+                    "--cov-branch",
                 ]
             )
 
-        # Add timeout configurations
         timeout = options.get("timeout", self.last_config.get("timeout", 300))
         cmd.extend([f"--timeout={timeout}", "--timeout-method=thread"])
 
-        # Add extra args if any
-        extra_args = options.get("extra_args")
-        if extra_args:
-            cmd.extend(extra_args.split())
+        if options.get("extra_args"):
+            cmd.extend(options["extra_args"].split())
 
-        # Add test selection
         if selected_tests:
             cmd.extend(selected_tests)
         else:
             cmd.append("tests")
 
-        # Setup environment
+        return cmd
+
+    def _process_test_output(
+        self, process: subprocess.Popen, log_file: Path
+    ) -> List[str]:
+        failed_tests = []
+        with log_file.open("w", encoding="utf-8") as log:
+            while True:
+                if self.stop_event.is_set():
+                    raise KeyboardInterrupt("Test execution interrupted")
+
+                line = process.stdout.readline()
+                if not line and process.poll() is not None:
+                    break
+
+                log.write(line)
+                log.flush()
+
+                if "FAILED" in line:
+                    print(Fore.RED + line.strip(), file=stream)
+                    failed_tests.append(line.strip())
+                elif "PASSED" in line:
+                    print(Fore.GREEN + line.strip(), file=stream)
+                elif "WARNING" in line:
+                    print(Fore.YELLOW + line.strip(), file=stream)
+                elif "ERROR" in line:
+                    print(Fore.RED + line.strip(), file=stream)
+                    failed_tests.append(line.strip())
+                else:
+                    print(line.strip(), file=stream)
+
+        return failed_tests
+
+    def _get_coverage_data(self) -> Optional[float]:
+        coverage_file = Path("coverage.json")
+        if coverage_file.exists():
+            try:
+                with coverage_file.open("r") as f:
+                    coverage_data = json.load(f)
+                    coverage = coverage_data.get("totals", {}).get("percent_covered", 0)
+                coverage_file.unlink()
+                return coverage
+            except Exception as e:
+                logger.warning(f"Error processing coverage data: {e}")
+        return None
+
+    def run_tests(
+        self, options: Dict, selected_tests: Optional[List[str]] = None
+    ) -> TestResult:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = LOG_DIR / f"test_run_{timestamp}.log"
+        report_file = HTML_REPORT_DIR / f"report_{timestamp}.html"
+
         env = os.environ.copy()
         env["PYTHONPATH"] = os.pathsep.join(
             [
@@ -228,64 +269,24 @@ class TestRunner:
 
         try:
             start_time = time.time()
+            cmd = self._prepare_test_command(options, selected_tests, report_file)
 
-            # Run tests with output capturing
-            with log_file.open("w", encoding="utf-8") as log:
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    universal_newlines=True,
-                    env=env,
-                    creationflags=subprocess.CREATE_NO_WINDOW
-                    if platform.system() == "Windows"
-                    else 0,
-                )
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                env=env,
+                creationflags=subprocess.CREATE_NO_WINDOW
+                if platform.system() == "Windows"
+                else 0,
+            )
 
-                self.running_processes.append(process)
-                failed_tests = []
-
-                while True:
-                    if self.stop_event.is_set():
-                        raise KeyboardInterrupt("Test execution interrupted")
-
-                    line = process.stdout.readline()
-                    if not line and process.poll() is not None:
-                        break
-
-                    log.write(line)
-                    log.flush()
-
-                    # Print with color coding
-                    if "FAILED" in line:
-                        print(Fore.RED + line.strip(), file=stream)
-                        failed_tests.append(line.strip())
-                    elif "PASSED" in line:
-                        print(Fore.GREEN + line.strip(), file=stream)
-                    elif "WARNING" in line:
-                        print(Fore.YELLOW + line.strip(), file=stream)
-                    elif "ERROR" in line:
-                        print(Fore.RED + line.strip(), file=stream)
-                        failed_tests.append(line.strip())
-                    else:
-                        print(line.strip(), file=stream)
-
+            self.running_processes.append(process)
+            failed_tests = self._process_test_output(process, log_file)
             duration = time.time() - start_time
             success = process.returncode == 0
-
-            # Get coverage if available
-            coverage = None
-            coverage_file = Path("coverage.json")
-            if coverage_file.exists():
-                try:
-                    with coverage_file.open("r") as f:
-                        coverage_data = json.load(f)
-                        coverage = coverage_data.get("totals", {}).get(
-                            "percent_covered", 0
-                        )
-                    coverage_file.unlink()
-                except Exception as e:
-                    logger.warning(f"Error processing coverage data: {e}")
+            coverage = self._get_coverage_data()
 
             result = TestResult(
                 success=success,
@@ -295,15 +296,13 @@ class TestRunner:
                 failed_tests=failed_tests,
             )
 
-            # Save test results
             self.save_test_results(result, timestamp)
-
             return result
 
         except subprocess.TimeoutExpired:
             return TestResult(
                 success=False,
-                message=f"Tests timed out after {timeout} seconds",
+                message=f"Tests timed out after {options.get('timeout', 300)} seconds",
                 duration=time.time() - start_time,
             )
         except KeyboardInterrupt:
@@ -366,11 +365,181 @@ def get_user_choice(prompt: str, options: List[str]) -> int:
             print_colored("Invalid input. Please enter a number.", Fore.RED)
 
 
+def _handle_test_selection(
+    choice: int, test_type_choices: List[str], runner: TestRunner, debug_mode: bool
+) -> Tuple[Optional[Dict], Optional[List[str]]]:
+    options = {
+        "debug": debug_mode,
+        "parallel": True,
+        "html_report": True,
+        "coverage": True,
+        "timeout": runner.last_config.get("timeout", 300),
+    }
+
+    selected_tests = None
+
+    if choice == 7:  # Run Single Test
+        selected_tests = _select_single_test()
+        if not selected_tests:
+            return None, None
+    else:
+        if choice == 2:
+            options["extra_args"] = "-m unit"
+        elif choice == 3:
+            options["extra_args"] = "-m integration"
+        elif choice == 4:
+            options["extra_args"] = "-m performance"
+        elif choice == 5:
+            options["extra_args"] = "-m functional"
+        elif choice == 6:
+            options["extra_args"] = "-m gui"
+
+    return options, selected_tests
+
+
+def _select_single_test() -> Optional[List[str]]:
+    excluded_files = {"test_runner_utils.py", "test_runners.py"}
+    test_files = sorted(
+        [
+            test.resolve()
+            for test in Path("tests").rglob("test_*.py")
+            if test.name not in excluded_files
+        ]
+    )
+
+    if not test_files:
+        print_colored("No test files found!", Fore.RED)
+        return None
+
+    tests_dir = Path("tests").resolve()
+    test_choices = ["Return to Main Menu"] + [
+        str(test.relative_to(tests_dir)) for test in test_files
+    ]
+
+    test_choice = get_user_choice("Select test file to run:", test_choices)
+    if test_choice == 1:
+        return None
+
+    selected_test = test_files[test_choice - 2]
+    return [str(selected_test.relative_to(Path.cwd()))]
+
+
+def _handle_reports_cleaning():
+    if input("Are you sure you want to clean all test reports? (y/n): ").lower() == "y":
+        try:
+            shutil.rmtree(REPORTS_DIR)
+            runner.initialize_directories()
+            print_colored("Test reports cleaned.", Fore.GREEN)
+        except Exception as e:
+            print_colored(f"Error cleaning reports: {e}", Fore.RED)
+
+
+def _view_last_report():
+    reports = sorted(HTML_REPORT_DIR.glob("*.html"))
+    if reports:
+        latest_report = reports[-1]
+        try:
+            if platform.system() == "Windows":
+                os.startfile(latest_report)
+            elif platform.system() == "Darwin":
+                subprocess.run(["open", latest_report])
+            else:
+                subprocess.run(["xdg-open", latest_report])
+        except Exception as e:
+            print_colored(f"Error opening report: {e}", Fore.RED)
+    else:
+        print_colored("No test reports found.", Fore.YELLOW)
+    input("\nPress Enter to continue...")
+
+
+def _print_test_summary(result: TestResult):
+    print_colored("\nTest Run Summary:", Fore.CYAN, Style.BRIGHT)
+    print_colored(
+        f"Status: {'Success' if result.success else 'Failed'}",
+        Fore.GREEN if result.success else Fore.RED,
+    )
+    print_colored(f"Duration: {result.duration:.2f} seconds", Fore.YELLOW)
+
+    if result.coverage is not None:
+        print_colored(f"Coverage: {result.coverage:.1f}%", Fore.YELLOW)
+
+    if result.failed_tests:
+        print_colored("\nFailed Tests:", Fore.RED)
+        for test in result.failed_tests:
+            print_colored(f"  {test}", Fore.RED)
+
+
+def _handle_menu_selection(
+    choice: int, test_type_choices: List[str], runner: TestRunner, debug_mode: bool
+) -> bool:
+    if choice == len(test_type_choices):  # Exit
+        print_colored("\nExiting. Goodbye!", Fore.YELLOW)
+        return False
+
+    if choice == len(test_type_choices) - 1:  # Clean reports
+        _handle_reports_cleaning()
+        return True
+
+    if choice == len(test_type_choices) - 2:  # View last report
+        _view_last_report()
+        return True
+
+    return _handle_test_execution(choice, test_type_choices, runner, debug_mode)
+
+
+def _handle_test_execution(
+    choice: int, test_type_choices: List[str], runner: TestRunner, debug_mode: bool
+) -> bool:
+    """Handle test execution and return True to continue execution"""
+    options, selected_tests = _handle_test_selection(
+        choice, test_type_choices, runner, debug_mode
+    )
+    if options is None:
+        return True
+
+    print_colored("\nRunning tests...\n", Fore.CYAN)
+    result = runner.run_tests(options, selected_tests)
+    _print_test_summary(result)
+
+    runner.last_config.update(
+        {
+            "last_run_type": test_type_choices[choice - 1],
+            "last_run_time": datetime.now().isoformat(),
+            "last_run_success": result.success,
+        }
+    )
+
+    input("\nPress Enter to continue...")
+    return True
+
+
+def _show_menu() -> Tuple[List[str], int]:
+    """Display menu and get user choice"""
+    clear_screen()
+    print_colored("GynTree Interactive Test Runner", Fore.CYAN, Style.BRIGHT)
+    print_colored("================================\n", Fore.CYAN, Style.BRIGHT)
+
+    test_type_choices = [
+        "Run All Tests",
+        "Run Unit Tests",
+        "Run Integration Tests",
+        "Run Performance Tests",
+        "Run Functional Tests",
+        "Run GUI Tests",
+        "Run Single Test",
+        "View Last Test Report",
+        "Clean Test Reports",
+        "Exit",
+    ]
+
+    choice = get_user_choice("Select operation:", test_type_choices)
+    return test_type_choices, choice
+
+
 def main(debug_mode: bool = False, ci_mode: bool = False):
     runner = TestRunner(debug_mode=debug_mode)
 
     if ci_mode:
-        # Run with default options in CI mode
         options = {
             "parallel": True,
             "html_report": True,
@@ -382,145 +551,9 @@ def main(debug_mode: bool = False, ci_mode: bool = False):
         sys.exit(0 if result.success else 1)
 
     while True:
-        clear_screen()
-        print_colored("GynTree Interactive Test Runner", Fore.CYAN, Style.BRIGHT)
-        print_colored("================================\n", Fore.CYAN, Style.BRIGHT)
-
-        test_type_choices = [
-            "Run All Tests",
-            "Run Unit Tests",
-            "Run Integration Tests",
-            "Run Performance Tests",
-            "Run Functional Tests",
-            "Run GUI Tests",
-            "Run Single Test",
-            "View Last Test Report",
-            "Clean Test Reports",
-            "Exit",
-        ]
-
-        choice = get_user_choice("Select operation:", test_type_choices)
-
-        if choice == len(test_type_choices):  # Exit
-            print_colored("\nExiting. Goodbye!", Fore.YELLOW)
+        test_type_choices, choice = _show_menu()
+        if not _handle_menu_selection(choice, test_type_choices, runner, debug_mode):
             break
-
-        if choice == len(test_type_choices) - 1:  # Clean reports
-            if (
-                input(
-                    "Are you sure you want to clean all test reports? (y/n): "
-                ).lower()
-                == "y"
-            ):
-                try:
-                    shutil.rmtree(REPORTS_DIR)
-                    runner.initialize_directories()
-                    print_colored("Test reports cleaned.", Fore.GREEN)
-                except Exception as e:
-                    print_colored(f"Error cleaning reports: {e}", Fore.RED)
-            continue
-
-        if choice == len(test_type_choices) - 2:  # View last report
-            reports = sorted(HTML_REPORT_DIR.glob("*.html"))
-            if reports:
-                latest_report = reports[-1]
-                try:
-                    if platform.system() == "Windows":
-                        os.startfile(latest_report)
-                    elif platform.system() == "Darwin":  # macOS
-                        subprocess.run(["open", latest_report])
-                    else:
-                        subprocess.run(["xdg-open", latest_report])
-                except Exception as e:
-                    print_colored(f"Error opening report: {e}", Fore.RED)
-            else:
-                print_colored("No test reports found.", Fore.YELLOW)
-            input("\nPress Enter to continue...")
-            continue
-
-        # Configure test run
-        options = {
-            "debug": debug_mode,
-            "parallel": True,
-            "html_report": True,
-            "coverage": True,
-            "timeout": runner.last_config.get("timeout", 300),
-        }
-
-        # Set test type
-        selected_tests = None
-        if choice == 7:  # Run Single Test
-            excluded_files = {"test_runner_utils.py", "test_runners.py"}
-            test_files = sorted(
-                [
-                    test.resolve()
-                    for test in Path("tests").rglob("test_*.py")
-                    if test.name not in excluded_files
-                ]
-            )
-
-            if not test_files:
-                print_colored("No test files found!", Fore.RED)
-                continue
-
-            # Use absolute path for 'tests' directory
-            tests_dir = Path("tests").resolve()
-            # Display test files relative to the 'tests' directory
-            test_choices = ["Return to Main Menu"] + [
-                str(test.relative_to(tests_dir)) for test in test_files
-            ]
-
-            test_choice = get_user_choice("Select test file to run:", test_choices)
-            if test_choice == 1:
-                continue  # Return to main menu
-
-            selected_test = test_files[test_choice - 2]  # Adjust index
-            # Pass the test path relative to current working directory
-            selected_tests = [str(selected_test.relative_to(Path.cwd()))]
-        else:
-            if choice == 1:
-                pass  # Run all tests
-            elif choice == 2:
-                options["extra_args"] = "-m unit"
-            elif choice == 3:
-                options["extra_args"] = "-m integration"
-            elif choice == 4:
-                options["extra_args"] = "-m performance"
-            elif choice == 5:
-                options["extra_args"] = "-m functional"
-            elif choice == 6:
-                options["extra_args"] = "-m gui"
-
-        # Run tests
-        print_colored("\nRunning tests...\n", Fore.CYAN)
-        result = runner.run_tests(options, selected_tests)
-
-        # Print summary
-        print_colored("\nTest Run Summary:", Fore.CYAN, Style.BRIGHT)
-        print_colored(
-            f"Status: {'Success' if result.success else 'Failed'}",
-            Fore.GREEN if result.success else Fore.RED,
-        )
-        print_colored(f"Duration: {result.duration:.2f} seconds", Fore.YELLOW)
-
-        if result.coverage is not None:
-            print_colored(f"Coverage: {result.coverage:.1f}%", Fore.YELLOW)
-
-        if result.failed_tests:
-            print_colored("\nFailed Tests:", Fore.RED)
-            for test in result.failed_tests:
-                print_colored(f"  {test}", Fore.RED)
-
-        # Save last run configuration
-        runner.last_config.update(
-            {
-                "last_run_type": test_type_choices[choice - 1],
-                "last_run_time": datetime.now().isoformat(),
-                "last_run_success": result.success,
-            }
-        )
-
-        input("\nPress Enter to continue...")
 
 
 if __name__ == "__main__":

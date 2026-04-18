@@ -2,8 +2,9 @@ import logging
 import os
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Tuple
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QCloseEvent, QFont, QIcon
 from PyQt5.QtWidgets import (
     QFileDialog,
@@ -23,6 +24,9 @@ from utilities.error_handler import handle_exception
 from utilities.resource_path import get_resource_path
 from utilities.theme_manager import ThemeManager
 
+if TYPE_CHECKING:
+    from controllers.AppController import AppController
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,17 +34,21 @@ class ProjectUI(QWidget):
     project_created = pyqtSignal(object)
     project_loaded = pyqtSignal(object)
 
-    def __init__(self, controller):
+    def __init__(self, controller: "AppController") -> None:
         super().__init__()
         self.controller = controller
         self.theme_manager = ThemeManager.getInstance()
-        self.init_ui()
+        self.project_name_input: Optional[QLineEdit] = None
+        self.start_dir_button: Optional[QPushButton] = None
+        self.start_dir_label: Optional[QLabel] = None
+        self.create_project_btn: Optional[QPushButton] = None
+        self.project_list: Optional[QListWidget] = None
+        self.load_project_btn: Optional[QPushButton] = None
 
-        # Connect theme changes
+        self.init_ui()
         self.theme_manager.themeChanged.connect(self.apply_theme)
 
-    def init_ui(self):
-        """Initialize the UI components"""
+    def init_ui(self) -> None:
         self.setWindowTitle("Project Manager")
         self.setWindowIcon(QIcon(get_resource_path("assets/images/GynTree_logo.ico")))
 
@@ -48,7 +56,6 @@ class ProjectUI(QWidget):
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(20)
 
-        # Create Project Section
         create_section = QFrame(self)
         create_section.setObjectName("createSection")
         create_section.setFrameShape(QFrame.StyledPanel)
@@ -78,7 +85,6 @@ class ProjectUI(QWidget):
 
         main_layout.addWidget(create_section)
 
-        # Load Project Section
         load_section = QFrame(self)
         load_section.setObjectName("loadSection")
         load_section.setFrameShape(QFrame.StyledPanel)
@@ -103,31 +109,34 @@ class ProjectUI(QWidget):
         self.setGeometry(300, 300, 600, 600)
         self.apply_theme()
 
-    def create_styled_button(self, text):
-        """Create a styled button with consistent appearance"""
+    def create_styled_button(self, text: str) -> QPushButton:
         btn = QPushButton(text)
         btn.setFont(QFont("Arial", 14))
         return btn
 
-    def refresh_project_list(self):
-        """Refresh the list of available projects"""
+    def refresh_project_list(self) -> None:
+        if self.project_list is None:  # Changed from if not self.project_list
+            logger.error("Project list widget not initialized")
+            return
+
         self.project_list.clear()
         projects = self.controller.project_controller.project_manager.list_projects()
+        logger.debug(f"ProjectUI: About to add {len(projects)} projects")
         self.project_list.addItems(projects)
+        logger.debug(f"ProjectUI: List now has {self.project_list.count()} items")
+        self.project_list.update()
 
-    def select_directory(self):
-        """Handle directory selection"""
+    def select_directory(self) -> None:
         directory = QFileDialog.getExistingDirectory(
             self,
             "Select Start Directory",
             "",
             QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
         )
-        if directory:
+        if directory and self.start_dir_label:
             self.start_dir_label.setText(directory)
 
-    def validate_project_name(self, name):
-        """Validate project name for illegal characters and length"""
+    def validate_project_name(self, name: str) -> Tuple[bool, str]:
         if not name:
             return False, "Project name cannot be empty"
 
@@ -140,8 +149,7 @@ class ProjectUI(QWidget):
 
         return True, ""
 
-    def validate_directory(self, directory):
-        """Validate selected directory"""
+    def validate_directory(self, directory: str) -> Tuple[bool, str]:
         if directory == "No directory selected":
             return False, "Please select a directory"
 
@@ -153,7 +161,6 @@ class ProjectUI(QWidget):
             if not path.is_dir():
                 return False, "Selected path is not a directory"
 
-            # Check if directory is readable
             if not os.access(path, os.R_OK):
                 return False, "Directory is not accessible"
 
@@ -162,48 +169,53 @@ class ProjectUI(QWidget):
             return False, f"Invalid directory path: {str(e)}"
 
     @handle_exception
-    def create_project(self, *args):
-        """
-        Handle project creation with validation.
-
-        Args:
-            *args: Variable arguments to support signal connection
-        """
-        project_name = self.project_name_input.text().strip()
-        start_directory = self.start_dir_label.text()
-
-        # Validate project name
-        name_valid, name_error = self.validate_project_name(project_name)
-        if not name_valid:
-            QMessageBox.warning(self, "Invalid Project Name", name_error)
+    def create_project(self, *args: object) -> None:
+        if not self.project_name_input or not self.start_dir_label:
+            logger.error("UI components not initialized")
             return
-
-        # Validate directory
-        dir_valid, dir_error = self.validate_directory(start_directory)
-        if not dir_valid:
-            QMessageBox.warning(self, "Invalid Directory", dir_error)
-            return
-
         try:
+            project_name = self.project_name_input.text().strip()
+            start_directory = self.start_dir_label.text()
+
+            # Validate project name
+            name_valid, name_error = self.validate_project_name(project_name)
+            if not name_valid:
+                QMessageBox.warning(self, "Invalid Project Name", name_error)
+                return
+
+            # Validate directory
+            dir_valid, dir_error = self.validate_directory(start_directory)
+            if not dir_valid:
+                QMessageBox.warning(self, "Invalid Directory", dir_error)
+                return
+
+            # Create and save project before emitting signals
             new_project = Project(name=project_name, start_directory=start_directory)
             logger.info(f"Creating new project: {project_name}")
 
-            # Emit the signal
+            # Save project first
+            self.controller.project_controller.project_manager.save_project(new_project)
+
+            # Then emit signal
             self.project_created.emit(new_project)
 
-            # Clear inputs
+            # Clear inputs and close
+            if not self.project_name_input or not self.start_dir_label:
+                logger.error("UI components not initialized during cleanup")
+                return
+
             self.project_name_input.clear()
             self.start_dir_label.setText("No directory selected")
-
-            # Close the window
             self.close()
 
         except Exception as e:
             logger.error(f"Error creating project: {str(e)}")
             QMessageBox.warning(self, "Error", f"Failed to create project: {str(e)}")
 
-    def load_project(self):
-        """Handle project loading with proper validation."""
+    def load_project(self) -> None:
+        if not self.project_list:
+            return
+
         selected_items = self.project_list.selectedItems()
         if not selected_items:
             QMessageBox.warning(
@@ -215,7 +227,6 @@ class ProjectUI(QWidget):
             project_name = selected_items[0].text()
             logger.info(f"Loading project: {project_name}")
 
-            # Load the project from the controller
             loaded_project = self.controller.project_controller.load_project(
                 project_name
             )
@@ -230,12 +241,10 @@ class ProjectUI(QWidget):
             logger.error(f"Error loading project: {str(e)}")
             QMessageBox.warning(self, "Error", f"Failed to load project: {str(e)}")
 
-    def apply_theme(self):
-        """Apply current theme to the UI"""
+    def apply_theme(self) -> None:
         if self.theme_manager:
             self.theme_manager.apply_theme(self)
 
-    def closeEvent(self, event: QCloseEvent):
-        """Handle window close event"""
+    def closeEvent(self, event: QCloseEvent) -> None:
         event.accept()
         super().closeEvent(event)

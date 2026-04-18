@@ -2,8 +2,6 @@ import gc
 import logging
 import os
 from collections import defaultdict
-from pathlib import Path
-from typing import Dict, Optional, Set
 
 import psutil
 import pytest

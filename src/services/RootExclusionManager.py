@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class RootExclusionManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.default_exclusions = {".git"}
         self.project_type_exclusions = {
             "web": {"node_modules", ".next", "dist", "build", "out"},
@@ -89,7 +89,9 @@ class RootExclusionManager:
         logger.info(f"Merged root exclusions: {merged_exclusions}")
         return merged_exclusions
 
-    def add_project_type_exclusion(self, project_type: str, exclusions: Set[str]):
+    def add_project_type_exclusion(
+        self, project_type: str, exclusions: Set[str]
+    ) -> None:
         """
         Add exclusions for a project type.
 
@@ -107,7 +109,9 @@ class RootExclusionManager:
             self.project_type_exclusions[project_type] = exclusions
         logger.info(f"Added exclusions for project type {project_type}: {exclusions}")
 
-    def remove_project_type_exclusion(self, project_type: str, exclusions: Set[str]):
+    def remove_project_type_exclusion(
+        self, project_type: str, exclusions: Set[str]
+    ) -> None:
         """
         Remove specific exclusions from a project type.
 

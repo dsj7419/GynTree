@@ -1,12 +1,10 @@
 import gc
 import logging
 import time
-from pathlib import Path
-from typing import Any, Dict, List
 
 import psutil
 import pytest
-from PyQt5.QtCore import QPoint, QSize, Qt, QTimer
+from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import (
@@ -14,11 +12,8 @@ from PyQt5.QtWidgets import (
     QHeaderView,
     QLabel,
     QMainWindow,
-    QMessageBox,
     QPushButton,
     QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
 )
 
 from components.UI.ResultUI import ResultUI  # Fixed import

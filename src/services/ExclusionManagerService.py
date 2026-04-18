@@ -1,8 +1,10 @@
 from typing import Dict, Set
 
+from services.SettingsManager import SettingsManager
+
 
 class ExclusionManagerService:
-    def __init__(self, settings_manager):
+    def __init__(self, settings_manager: SettingsManager) -> None:
         self.settings_manager = settings_manager
 
     def get_aggregated_exclusions(self) -> str:
@@ -11,31 +13,36 @@ class ExclusionManagerService:
         """
         exclusions = self.settings_manager.get_all_exclusions()
         lines = []
-        # Root Exclusions
         root_exclusions = exclusions.get("root_exclusions", set())
         if root_exclusions:
             lines.append("Root Exclusions:")
             for path in sorted(root_exclusions):
                 lines.append(f"  - {path}")
-        # Excluded Directories
+
         excluded_dirs = exclusions.get("excluded_dirs", set())
         if excluded_dirs:
             lines.append("\nExcluded Directories:")
             for path in sorted(excluded_dirs):
                 lines.append(f"  - {path}")
-        # Excluded Files
+
         excluded_files = exclusions.get("excluded_files", set())
         if excluded_files:
             lines.append("\nExcluded Files:")
             for path in sorted(excluded_files):
                 lines.append(f"  - {path}")
+
         return "\n".join(lines)
 
     def get_detailed_exclusions(self) -> Dict[str, Set[str]]:
         """
         Returns a dictionary of detailed exclusions categorized by type.
         """
-        return self.settings_manager.get_all_exclusions()
+        exclusions = self.settings_manager.get_all_exclusions()
+        return {
+            "root_exclusions": exclusions["root_exclusions"],
+            "excluded_dirs": exclusions["excluded_dirs"],
+            "excluded_files": exclusions["excluded_files"],
+        }
 
     def add_directory(self, directory: str) -> bool:
         """
@@ -85,7 +92,7 @@ class ExclusionManagerService:
         self.settings_manager.update_settings({"excluded_files": list(current_files)})
         return True
 
-    def save_exclusions(self):
+    def save_exclusions(self) -> None:
         """
         Saves the current settings. (Assuming SettingsManager handles persistence)
         """

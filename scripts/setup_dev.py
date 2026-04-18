@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def run_command(command):
     """Run a command and return its success status"""
     try:

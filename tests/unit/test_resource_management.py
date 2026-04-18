@@ -2,14 +2,14 @@ import gc
 import os
 import tempfile
 import time
-from unittest.mock import MagicMock, Mock, create_autospec, patch
+from unittest.mock import Mock, create_autospec, patch
 
 import psutil
 import pytest
 
 # Import conftest utilities
 from conftest import test_artifacts
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QTreeWidget, QTreeWidgetItem
 
 from components.TreeExporter import TreeExporter
@@ -245,7 +245,7 @@ class TestResourceManagement:
             ):
                 try:
                     context.close()
-                except:
+                except Exception:
                     pass
 
             QApplication.processEvents()  # Allow event processing

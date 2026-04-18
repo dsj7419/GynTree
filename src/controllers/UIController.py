@@ -1,31 +1,26 @@
-"""
-GynTree: UIController manages the interaction between the project and the UI.
-This controller is responsible for updating and resetting UI components whenever
-a new project is loaded or created. It ensures that the correct project information
-is displayed and that the user interface reflects the current project state.
-
-Responsibilities:
-- Reset and update UI components like the directory tree, exclusions, and analysis.
-- Manage exclusion-related UI elements.
-- Provide a clean interface for displaying project information in the main UI.
-"""
-
 import logging
+from typing import Any, Dict, Optional
 
-from PyQt5.QtCore import QMetaObject, QObject, Qt, pyqtSignal, pyqtSlot
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import QMetaObject, Qt
+from PyQt5.QtWidgets import QMessageBox, QWidget
 
+from components.UI.AutoExcludeUI import AutoExcludeUI
+from components.UI.DirectoryTreeUI import DirectoryTreeUI
+from components.UI.ExclusionsManagerUI import ExclusionsManagerUI
 from components.UI.ResultUI import ResultUI
+from models.Project import Project
+from services.auto_exclude.AutoExcludeManager import AutoExcludeManager
+from services.DirectoryAnalyzer import DirectoryAnalyzer
+from services.SettingsManager import SettingsManager
 
 logger = logging.getLogger(__name__)
 
 
 class UIController:
-    def __init__(self, main_ui):
+    def __init__(self, main_ui: Any) -> None:
         self.main_ui = main_ui
 
-    def reset_ui(self):
-        """Reset UI components like directory tree, exclusions, and analysis."""
+    def reset_ui(self) -> None:
         logger.debug("Resetting UI components for new project...")
         self.main_ui.clear_directory_tree()
         self.main_ui.clear_analysis()
@@ -33,12 +28,11 @@ class UIController:
 
     def show_auto_exclude_ui(
         self,
-        auto_exclude_manager,
-        settings_manager,
-        formatted_recommendations,
-        project_context,
-    ):
-        """Show auto-exclude UI with given recommendations."""
+        auto_exclude_manager: AutoExcludeManager,
+        settings_manager: SettingsManager,
+        formatted_recommendations: Dict[str, Any],
+        project_context: Any,
+    ) -> Optional[AutoExcludeUI]:
         try:
             return self.main_ui.show_auto_exclude_ui(
                 auto_exclude_manager,
@@ -51,9 +45,11 @@ class UIController:
             self.show_error_message(
                 "Auto-Exclude Error", f"Failed to show auto-exclude UI: {str(e)}"
             )
+            return None
 
-    def manage_exclusions(self, settings_manager):
-        """Show exclusions management UI."""
+    def manage_exclusions(
+        self, settings_manager: SettingsManager
+    ) -> Optional[ExclusionsManagerUI]:
         try:
             return self.main_ui.manage_exclusions(settings_manager)
         except Exception as e:
@@ -61,9 +57,9 @@ class UIController:
             self.show_error_message(
                 "Exclusion Management Error", f"Failed to manage exclusions: {str(e)}"
             )
+            return None
 
-    def update_project_info(self, project):
-        """Update project information displayed in the UI."""
+    def update_project_info(self, project: Project) -> None:
         try:
             self.main_ui.update_project_info(project)
         except Exception as e:
@@ -72,8 +68,7 @@ class UIController:
                 "Update Error", f"Failed to update project information: {str(e)}"
             )
 
-    def view_directory_tree(self, result):
-        """Show directory tree UI given the result."""
+    def view_directory_tree(self, result: Dict[str, Any]) -> Optional[DirectoryTreeUI]:
         try:
             return self.main_ui.view_directory_tree_ui(result)
         except Exception as e:
@@ -81,17 +76,17 @@ class UIController:
             self.show_error_message(
                 "View Error", f"Failed to view directory tree: {str(e)}"
             )
+            return None
 
-    def show_result(self, directory_analyzer):
-        """Show result UI given directory analyzer."""
+    def show_result(self, directory_analyzer: DirectoryAnalyzer) -> Optional[ResultUI]:
         try:
             return self.main_ui.show_result(directory_analyzer)
         except Exception as e:
             logger.error(f"Error showing results: {str(e)}")
             self.show_error_message("Result Error", f"Failed to show results: {str(e)}")
+            return None
 
-    def update_ui(self, component, data):
-        """Update UI component with given data."""
+    def update_ui(self, component: QWidget, data: Any) -> None:
         try:
             QMetaObject.invokeMethod(
                 component, "update_data", Qt.QueuedConnection, data
@@ -102,17 +97,14 @@ class UIController:
                 "Update Error", f"Failed to update UI component: {str(e)}"
             )
 
-    def show_error_message(self, title, message):
-        """Display an error message to the user."""
+    def show_error_message(self, title: str, message: str) -> None:
         try:
             self.main_ui.show_error_message(title, message)
         except Exception as e:
             logger.error(f"Failed to show error message: {str(e)}")
-            # Fallback to QMessageBox if main_ui error display fails
             QMessageBox.critical(None, title, message)
 
-    def show_dashboard(self):
-        """Show the main dashboard."""
+    def show_dashboard(self) -> None:
         try:
             self.main_ui.show_dashboard()
         except Exception as e:

@@ -397,12 +397,10 @@ def test_large_file_count_performance(exclusion_service, tmpdir):
 def test_walk_directory_with_empty_dirs(exclusion_service, tmpdir):
     mock_settings_manager = exclusion_service.settings_manager
     mock_settings_manager.is_excluded.side_effect = lambda path: "styles" in path
-
     walked_paths = []
     for root, dirs, files in exclusion_service.walk_directory():
         walked_paths.extend([os.path.join(root, d) for d in dirs])
-
-    assert len([p for p in walked_paths if not "styles" in p]) == 2
+    assert len([p for p in walked_paths if "styles" not in p]) == 2
     assert any("empty1" in path for path in walked_paths)
     assert any("empty2" in path for path in walked_paths)
 

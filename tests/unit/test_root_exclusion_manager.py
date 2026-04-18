@@ -1,8 +1,6 @@
 import gc
 import logging
-import os
 from pathlib import Path
-from typing import Dict, Set
 
 import psutil
 import pytest

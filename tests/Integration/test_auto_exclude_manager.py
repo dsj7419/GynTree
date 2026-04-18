@@ -2,9 +2,7 @@
 
 import gc
 import logging
-import os
 from pathlib import Path
-from typing import Any, Dict, Set
 
 import psutil
 import pytest
@@ -219,7 +217,6 @@ def test_new_exclusions_after_settings_update(
 def test_invalid_settings_key_handling(auto_exclude_manager, settings_manager, helper):
     """Test handling of invalid settings keys"""
     helper.track_memory()
-    initial_settings = settings_manager.get_all_exclusions()
     auto_exclude_manager.apply_recommendations()
     settings_manager.update_settings({"invalid_key": ["some_value"]})
     updated_settings = settings_manager.get_all_exclusions()

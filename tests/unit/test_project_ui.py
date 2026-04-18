@@ -1,22 +1,10 @@
 # tests/unit/test_project_ui.py
-import os
 
 import pytest
-from PyQt5.QtCore import QEvent, Qt, pyqtSignal
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtTest import QSignalSpy, QTest
-from PyQt5.QtWidgets import (
-    QFileDialog,
-    QFrame,
-    QLabel,
-    QLineEdit,
-    QListWidget,
-    QMessageBox,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
-from pytest_mock import mocker
+from PyQt5.QtTest import QTest
+from PyQt5.QtWidgets import QFileDialog, QFrame, QLabel, QMessageBox, QWidget
 
 from components.UI.ProjectUI import ProjectUI
 from models.Project import Project

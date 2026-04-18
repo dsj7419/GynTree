@@ -74,16 +74,11 @@ def test_get_exclusions_with_existing_files(ide_git_exclude, tmpdir):
 def test_temp_file_patterns(ide_git_exclude, tmpdir):
     """Test temporary file exclusion patterns"""
     test_files = ["test.tmp", "backup.bak", "~file", ".file.swp"]
-
     for file in test_files:
         tmpdir.join(file).write("test content")
 
     exclusions = ide_git_exclude.get_exclusions()
-
-    for file in test_files:
-        relative_path = os.path.relpath(
-            os.path.join(str(tmpdir), file), ide_git_exclude.start_directory
-        )
+    for _ in test_files:  # Changed to _ since we don't use the file name
         assert any(
             pattern in exclusions["excluded_files"]
             for pattern in ["*.tmp", "*.bak", "*~", "*.swp"]

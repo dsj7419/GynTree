@@ -234,7 +234,7 @@ def test_large_directory_structure(helper, analyzer):
                             if subitem.is_file():
                                 subitem.unlink()
                         item.rmdir()
-                except:
+                except Exception:
                     pass
 
     # Create test files
@@ -404,7 +404,7 @@ def test_directory_permissions(helper, analyzer):
     restricted_dir.mkdir()
 
     # Create the file before applying restrictions
-    secret_file = helper.create_file_with_comment("restricted/secret.txt", "Top secret")
+    helper.create_file_with_comment("restricted/secret.txt", "Top secret")
 
     # Set restrictive permissions
     try:
@@ -434,7 +434,7 @@ def test_directory_permissions(helper, analyzer):
     finally:
         try:
             os.chmod(str(restricted_dir), 0o755)
-        except OSError:
+        except OSError:  # noqa: E722
             pass
 
     helper.check_memory_usage("permission handling")

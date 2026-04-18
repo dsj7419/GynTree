@@ -19,7 +19,7 @@ class PythonAutoExclude(ExclusionService):
         super().__init__(start_directory, project_type_detector, settings_manager)
 
     def get_exclusions(self) -> Dict[str, Set[str]]:
-        recommendations = {
+        recommendations: Dict[str, Set[str]] = {
             "root_exclusions": set(),
             "excluded_dirs": set(),
             "excluded_files": set(),
@@ -38,7 +38,8 @@ class PythonAutoExclude(ExclusionService):
             }
             recommendations["root_exclusions"].update(python_root_exclusions)
             logger.debug(
-                f"PythonAutoExclude: Adding Python-related excluded_dirs to root exclusions: {python_root_exclusions}"
+                "PythonAutoExclude: Adding Python-related excluded_dirs "
+                f"to root exclusions: {python_root_exclusions}"
             )
 
         for root, dirs, files in self.walk_directory():
@@ -48,7 +49,8 @@ class PythonAutoExclude(ExclusionService):
                         os.path.relpath(os.path.join(root, file), self.start_directory)
                     )
                     logger.debug(
-                        f"PythonAutoExclude: Recommending exclusion of Python-related file {file}"
+                        "PythonAutoExclude: Recommending exclusion of "
+                        f"Python-related file {file}"
                     )
                 elif file in [
                     "requirements.txt",
@@ -61,7 +63,8 @@ class PythonAutoExclude(ExclusionService):
                         os.path.relpath(os.path.join(root, file), self.start_directory)
                     )
                     logger.debug(
-                        f"PythonAutoExclude: Recommending exclusion of Python dependency file {file}"
+                        "PythonAutoExclude: Recommending exclusion of "
+                        f"Python dependency file {file}"
                     )
 
         setup_files = ["setup.py", "setup.cfg"]
@@ -70,7 +73,8 @@ class PythonAutoExclude(ExclusionService):
         ):
             recommendations["excluded_dirs"].update(["build", "dist"])
             logger.debug(
-                "PythonAutoExclude: Recommending exclusion of 'build' and 'dist' excluded_dirs"
+                "PythonAutoExclude: Recommending exclusion of 'build' and "
+                "'dist' excluded_dirs"
             )
 
         return recommendations

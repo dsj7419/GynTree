@@ -1,22 +1,11 @@
 # tests/unit/test_directory_tree_ui.py
 import os
-from pathlib import Path
 
 import pytest
 from PyQt5.QtCore import QSize, Qt, QTimer
 from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import (
-    QApplication,
-    QHeaderView,
-    QLabel,
-    QMessageBox,
-    QPushButton,
-    QTreeWidget,
-    QTreeWidgetItem,
-    QWidget,
-)
+from PyQt5.QtWidgets import QApplication, QLabel, QMessageBox, QPushButton, QWidget
 
-from components.TreeExporter import TreeExporter
 from components.UI.DirectoryTreeUI import DirectoryTreeUI
 
 pytestmark = pytest.mark.unit
@@ -104,7 +93,6 @@ def mock_os_operations(mocker):
 @pytest.fixture(autouse=True)
 def clean_temp_files():
     """Cleanup any leftover temp files"""
-    import shutil
     import tempfile
 
     # Store original tempdir
@@ -244,10 +232,10 @@ def test_export_functions(directory_tree_ui, qtbot, mocker, tmp_path):
 @pytest.mark.timeout(30)
 def test_export_empty_tree(directory_tree_ui, qtbot, mocker, tmp_path):
     """Test export functionality with an empty tree."""
-
-    # Mock QMessageBox to capture dialogs and set up auto-close
+    # Mock QMessageBox to return Yes for the empty tree warning
     mock_warning = mocker.patch(
-        "PyQt5.QtWidgets.QMessageBox.warning", side_effect=lambda *args: QMessageBox.Ok
+        "PyQt5.QtWidgets.QMessageBox.warning",
+        return_value=QMessageBox.Yes,  # Changed from Ok to Yes
     )
 
     # Use a real temporary file path for export
@@ -277,9 +265,11 @@ def test_export_empty_tree(directory_tree_ui, qtbot, mocker, tmp_path):
         if btn.text() == "Export PNG"
     )
     QTest.mouseClick(export_png_btn, Qt.LeftButton)
+    qtbot.wait(100)  # Added wait to ensure handlers complete
 
-    # Verify that the warning dialog was shown
+    # Verify that the warning dialog was shown and file dialog was called
     assert mock_warning.called, "Warning dialog was not shown for empty tree export"
+    assert mock_file_dialog.called, "File dialog was not shown for export"
 
 
 @pytest.mark.timeout(30)

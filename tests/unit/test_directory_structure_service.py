@@ -384,7 +384,7 @@ def test_deep_nested_structure(service, tmp_path, stop_event):
         assert (
             current_level["name"] == os.path.basename(str(test_dir))
             if i == 0
-            else f"subdir{i-1}"
+            else f"subdir{i - 1}"
         )
         assert len(current_level["children"]) > 0
         # Find the subdirectory in children
@@ -555,7 +555,6 @@ def test_stop_event_responsiveness(service, tmp_path):
             time.sleep(0.001)
 
     stop_event = threading.Event()
-    processed_files = []
 
     def delayed_stop():
         time.sleep(0.02)  # Reduced delay for more reliable timing

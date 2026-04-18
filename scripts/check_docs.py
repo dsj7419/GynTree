@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+
 def check_docs():
     """Check documentation files for common issues."""
     root_dir = Path(__file__).parent.parent

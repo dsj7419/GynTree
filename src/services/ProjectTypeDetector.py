@@ -1,6 +1,4 @@
 import os
-from functools import lru_cache
-from pathlib import Path
 from typing import Dict, Set
 
 
@@ -94,7 +92,7 @@ class ProjectTypeDetector:
         db_indicators = {"prisma", "schema.prisma", "migrations", ".sqlite", ".db"}
 
         # Check directory contents
-        contents = set()
+        contents: Set[str] = set()
         for root, dirs, files in os.walk(self.start_directory):
             contents.update(map(str.lower, files))
             contents.update(map(str.lower, dirs))

@@ -27,7 +27,8 @@ class AutoExcludeManager:
             project_types, self.start_directory, project_type_detector, settings_manager
         )
         logger.debug(
-            f"Created exclusion services: {[type(service).__name__ for service in self.exclusion_services]}"
+            "Created exclusion services: %s",
+            [type(service).__name__ for service in self.exclusion_services],
         )
         self.raw_recommendations: Dict[str, Set[str]] = {
             "root_exclusions": set(),
@@ -55,14 +56,12 @@ class AutoExcludeManager:
             "excluded_files": set(),
         }
 
-        # Get current exclusions
         current_exclusions = {
             "root_exclusions": set(self.settings_manager.get_root_exclusions()),
             "excluded_dirs": set(self.settings_manager.get_excluded_dirs()),
             "excluded_files": set(self.settings_manager.get_excluded_files()),
         }
 
-        # Collect all recommendations from services
         for service in self.exclusion_services:
             try:
                 service_exclusions = service.get_exclusions()
@@ -75,8 +74,7 @@ class AutoExcludeManager:
                     f"Error getting exclusions from service {type(service).__name__}: {str(e)}"
                 )
 
-        # Filter out already excluded items
-        new_recommendations = {
+        new_recommendations: Dict[str, Set[str]] = {
             "root_exclusions": set(),
             "excluded_dirs": set(),
             "excluded_files": set(),
@@ -86,10 +84,8 @@ class AutoExcludeManager:
             new_items = (
                 self.raw_recommendations[category] - current_exclusions[category]
             )
-            # Only include items that aren't already excluded and aren't in a path that's already excluded
             for item in new_items:
                 full_path = os.path.join(self.start_directory, item)
-                # Only add if not already excluded by another rule
                 if not self.settings_manager.is_excluded(full_path):
                     new_recommendations[category].add(item)
 
@@ -115,7 +111,7 @@ class AutoExcludeManager:
             return "No new exclusions to suggest."
         return formatted
 
-    def apply_recommendations(self):
+    def apply_recommendations(self) -> None:
         """Apply the current recommendations to the settings."""
         try:
             recommendations = self.get_recommendations()

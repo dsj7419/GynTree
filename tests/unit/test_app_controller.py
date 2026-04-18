@@ -1,31 +1,14 @@
 import gc
 import logging
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 import psutil
 import pytest
-from PyQt5.QtCore import QPoint, QSize, Qt
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import (
-    QApplication,
-    QLabel,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QStatusBar,
-    QWidget,
-)
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QMessageBox, QPushButton
 
 from components.UI.animated_toggle import AnimatedToggle
-from components.UI.AutoExcludeUI import AutoExcludeUI
 from components.UI.DashboardUI import DashboardUI
-from components.UI.DirectoryTreeUI import DirectoryTreeUI
-from components.UI.ExclusionsManagerUI import ExclusionsManagerUI
-from components.UI.ProjectUI import ProjectUI
-from components.UI.ResultUI import ResultUI
 from utilities.theme_manager import ThemeManager
 
 pytestmark = [pytest.mark.functional, pytest.mark.gui]
@@ -248,7 +231,7 @@ def dashboard_ui(qtbot, mock_controller):
             if hasattr(component, "deleteLater"):
                 component.deleteLater()
             ui.ui_components.remove(component)
-        except:
+        except Exception:
             pass
 
     ui.close()

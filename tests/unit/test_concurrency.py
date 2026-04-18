@@ -1,15 +1,13 @@
 import threading
 import time
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
-from PyQt5.QtCore import QCoreApplication, Qt, QThread, QTimer
+from PyQt5.QtCore import QCoreApplication, QThread
 from PyQt5.QtTest import QSignalSpy
 from PyQt5.QtWidgets import QApplication
 
-from controllers.AutoExcludeWorker import AutoExcludeWorker
-from controllers.ThreadController import AutoExcludeWorkerRunnable, ThreadController
+from controllers.ThreadController import ThreadController
 from models.Project import Project
 from services.DirectoryAnalyzer import DirectoryAnalyzer
 from services.ProjectContext import ProjectContext
@@ -60,10 +58,8 @@ class TestConcurrency:
         mock_context = Mock()
         mock_context.trigger_auto_exclude = mock_work
 
-        # Start multiple workers
-        workers = [
-            thread_controller.start_auto_exclude_thread(mock_context) for _ in range(3)
-        ]
+        # Start multiple workers (removed workers list since we don't need it)
+        [thread_controller.start_auto_exclude_thread(mock_context) for _ in range(3)]
 
         # Wait for completion and process events
         time.sleep(0.5)
@@ -113,7 +109,8 @@ class TestConcurrency:
         # Create signal spy
         finished_spy = QSignalSpy(thread_controller.worker_finished)
 
-        worker = thread_controller.start_auto_exclude_thread(mock_context)
+        # Start worker (no need to store reference as we're using spy)
+        thread_controller.start_auto_exclude_thread(mock_context)
 
         # Wait for signals and process events
         start_time = time.time()
@@ -157,7 +154,8 @@ class TestConcurrency:
 
         error_spy = QSignalSpy(thread_controller.worker_error)
 
-        worker = thread_controller.start_auto_exclude_thread(mock_context)
+        # Start worker (no need to store reference as we're using spy)
+        thread_controller.start_auto_exclude_thread(mock_context)
 
         # Wait for error signal and process events
         start_time = time.time()

@@ -2,7 +2,6 @@ import atexit
 import gc
 import logging
 import logging.handlers
-import os
 import queue
 import shutil
 import sys
@@ -10,10 +9,10 @@ import tempfile
 import threading
 import time
 import weakref
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager
 from pathlib import Path
 from queue import Queue
-from typing import Any, Dict, List, Optional
+from typing import List
 
 import psutil
 import pytest
@@ -21,16 +20,15 @@ from PyQt5.QtCore import QEventLoop, Qt, QTimer
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
-# Add src directory to path for compatibility
-SRC_PATH = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(SRC_PATH))
-
 from models.Project import Project
 from services.ProjectContext import ProjectContext
 from services.ProjectTypeDetector import ProjectTypeDetector
 from services.SettingsManager import SettingsManager
 from utilities.theme_manager import ThemeManager
 
+# Add src directory to path for compatibility
+SRC_PATH = Path(__file__).parent.parent / "src"
+sys.path.insert(0, str(SRC_PATH))
 # Configure logging with thread-safe implementation
 LOG_DIR = Path("tests/reports/logs")
 LOG_DIR.mkdir(parents=True, exist_ok=True)

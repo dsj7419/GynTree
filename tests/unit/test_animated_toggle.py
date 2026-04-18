@@ -1,6 +1,6 @@
 # tests/unit/test_animated_toggle.py
 import pytest
-from PyQt5.QtCore import QPoint, Qt, QTimer
+from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtTest import QTest
 
 from components.UI.animated_toggle import AnimatedToggle

@@ -1,6 +1,4 @@
 import gc
-import math
-import os
 import time
 
 import psutil
@@ -127,9 +125,9 @@ def test_directory_analyzer_scalability(
 
         start_time = time.time()
         result = analyzer.analyze_directory()
+        assert result["children"], "Result should contain children"
         execution_time = time.time() - start_time
         execution_times.append(execution_time)
-
         print(f"Depth {depth}: Analysis completed in {execution_time:.2f} seconds")
 
     if len(execution_times) > 1:
@@ -180,12 +178,15 @@ def test_directory_analyzer_memory_leak(
             initial_memory = process.memory_info().rss
 
         result = analyzer.analyze_directory()
+        assert result["children"], "Result should contain children"
 
         gc.collect()
         current_memory = process.memory_info().rss
         memory_increase = current_memory - initial_memory
 
-        print(f"Iteration {i+1}: Memory delta {memory_increase / (1024 * 1024):.2f}MB")
+        print(
+            f"Iteration {i + 1}: Memory delta {memory_increase / (1024 * 1024):.2f}MB"
+        )
 
         if i > 0:
             assert (

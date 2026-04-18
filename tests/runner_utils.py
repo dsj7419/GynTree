@@ -2,7 +2,6 @@
 import json
 import os
 import subprocess
-import sys
 import time
 import traceback
 from dataclasses import dataclass
@@ -156,7 +155,7 @@ def analyze_test_results(output_file: str) -> TestResult:
 
     total_tests = passed_tests + failed_tests + skipped_tests + error_tests
 
-    print_colored(f"\nTest Results Summary:", Fore.CYAN)
+    print_colored("\nTest Results Summary:", Fore.CYAN)
     print_colored(f"Total tests: {total_tests}", Fore.CYAN)
     print_colored(f"Passed: {passed_tests}", Fore.GREEN)
     print_colored(f"Failed: {failed_tests}", Fore.RED)

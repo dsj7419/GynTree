@@ -1,10 +1,8 @@
 import gc
-import threading
-import time
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
-from PyQt5.QtCore import QCoreApplication, QEvent, Qt, QThread, QThreadPool
+from PyQt5.QtCore import QCoreApplication, QThread, QThreadPool
 from PyQt5.QtTest import QSignalSpy
 
 from controllers.AutoExcludeWorker import AutoExcludeWorker

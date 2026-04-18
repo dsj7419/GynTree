@@ -1,17 +1,16 @@
 # tests/unit/test_ui_state.py
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
-from PyQt5.QtCore import QSize, Qt, QThread, QTimer
+from PyQt5.QtCore import QSize, QTimer
 from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import QApplication, QMessageBox, QPushButton, QWidget
+from PyQt5.QtWidgets import QApplication, QMessageBox, QPushButton
 
 from components.UI.AutoExcludeUI import AutoExcludeUI
 from components.UI.DashboardUI import DashboardUI
 from components.UI.ExclusionsManagerUI import ExclusionsManagerUI
-from components.UI.ProjectUI import ProjectUI
 from utilities.theme_manager import ThemeManager
 
 

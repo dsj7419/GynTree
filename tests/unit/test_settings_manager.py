@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
 
 import psutil
 import pytest
@@ -106,13 +106,14 @@ def test_initialization(settings_manager, helper):
 def test_load_settings_with_existing_file(helper):
     """Test loading settings from existing file"""
     helper.track_memory()
-
     project = helper.create_project()
     settings_file = helper.create_settings_file(project.name)
 
+    # Assert settings file was created properly
+    assert settings_file.exists(), "Settings file was not created"
+
     manager = SettingsManager(project)
     assert manager.settings == helper.test_settings
-
     helper.check_memory_usage("load settings")
 
 
